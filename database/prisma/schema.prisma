@@ -1,0 +1,60 @@
+generator client {
+  provider            = "prisma-client"
+  output              = "../generated/prisma"
+  importFileExtension = "ts"
+  moduleFormat        = "esm"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String     @id @default(uuid())
+  name         String
+  email        String     @unique
+  passwordHash String
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  analyses     Analysis[]
+
+  @@index([email])
+}
+
+model Analysis {
+  id            String          @id @default(uuid())
+  userId        String
+  inputType     String
+  originalInput String
+  status        String
+  createdAt     DateTime        @default(now())
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  result        AnalysisResult?
+
+  @@index([userId])
+  @@index([userId, createdAt])
+  @@index([inputType])
+  @@index([status])
+}
+
+model AnalysisResult {
+  id                 String   @id @default(uuid())
+  analysisId         String   @unique
+  classification     String
+  riskScore          Int
+  confidence         Float
+  scamType           String
+  severity           String
+  explanation        String
+  redFlags           String[]
+  attackPattern      String[]
+  recommendedActions String[]
+  createdAt          DateTime @default(now())
+  analysis           Analysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+
+  @@index([classification])
+  @@index([riskScore])
+  @@index([scamType])
+  @@index([severity])
+  @@index([createdAt])
+}
