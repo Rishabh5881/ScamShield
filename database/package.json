@@ -1,0 +1,22 @@
+{
+  "name": "scamshield-database",
+  "version": "1.0.0",
+  "description": "PostgreSQL and Prisma database module for ScamShield AI",
+  "main": "index.js",
+  "scripts": {
+    "prisma:generate": "prisma generate",
+    "prisma:validate": "prisma validate",
+    "prisma:format": "prisma format",
+    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate dev",
+    "db:studio": "prisma studio",
+    "db:seed": "node prisma/seed.js",
+    "db:test": "node scripts/database-test.js"
+  },
+  "dependencies": {
+    "@prisma/client": "^7.9.1"
+  },
+  "devDependencies": {
+    "prisma": "^7.9.1"
+  }
+}

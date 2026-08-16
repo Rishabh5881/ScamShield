@@ -5,6 +5,9 @@ import rateLimit from "express-rate-limit";
 import "dotenv/config";
 
 import authRoutes from "./routes/auth.routes.js";
+import analysisRoutes from "./routes/analysis.routes.js";
+import historyRoutes from "./routes/history.routes.js";
+import analyticsRoutes from "./routes/analytics.routes.js";
 import { errorMiddleware } from "./middleware/error.middleware.js";
 
 const app = express();
@@ -38,6 +41,9 @@ app.get("/api/health", (req, res) => {
 });
 
 app.use("/api/auth", authRoutes);
+app.use("/api/analysis", analysisRoutes);
+app.use("/api/history", historyRoutes);
+app.use("/api/analytics", analyticsRoutes);
 
 app.use(errorMiddleware);
 
