@@ -14,6 +14,10 @@ import {
   getSeverity,
 } from "../risk/risk.engine.js";
 
+import {
+  analyzeUrls,
+} from "../intelligence/url/url-intelligence.service.js";
+
 export async function analyzeMessage(text) {
   if (!text || typeof text !== "string") {
     throw new Error("Message text is required");
@@ -29,6 +33,7 @@ export async function analyzeMessage(text) {
     throw new Error("Message is too long");
   }
 
+  // Existing Gemini analysis
   const rawResponse = await generateAIResponse({
     systemPrompt: messageSystemPrompt,
     userPrompt: buildMessageUserPrompt(trimmedText),
@@ -50,7 +55,14 @@ export async function analyzeMessage(text) {
 
   const aiResult = validation.data;
 
-  const risk = calculateRiskScore(trimmedText, aiResult);
+  // Existing message risk engine
+  const risk = calculateRiskScore(
+    trimmedText,
+    aiResult
+  );
+
+  // New URL intelligence layer
+  const urlIntelligence = analyzeUrls(trimmedText);
 
   return {
     classification: aiResult.classification,
@@ -63,5 +75,8 @@ export async function analyzeMessage(text) {
     explanation: aiResult.explanation,
     recommendedActions: aiResult.recommendedActions,
     detectedSignals: risk.detectedSignals,
+
+    // Additional URL security intelligence
+    urlIntelligence,
   };
 }
