@@ -29,7 +29,12 @@ import {
   buildRiskEvidence,
 } from "../risk/risk-evidence.service.js";
 
+import {
+  buildRiskDecision,
+} from "../risk/risk-decision.service.js";
+
 export async function analyzeMessage(text) {
+  // 1. Input validation
   if (!text || typeof text !== "string") {
     throw new Error("Message text is required");
   }
@@ -44,13 +49,13 @@ export async function analyzeMessage(text) {
     throw new Error("Message is too long");
   }
 
-  // 1. Gemini AI analysis
+  // 2. Gemini AI analysis
   const rawResponse = await generateAIResponse({
     systemPrompt: messageSystemPrompt,
     userPrompt: buildMessageUserPrompt(trimmedText),
   });
 
-  // 2. Parse AI JSON
+  // 3. Parse AI JSON
   let parsedResponse;
 
   try {
@@ -59,7 +64,7 @@ export async function analyzeMessage(text) {
     throw new Error("AI returned invalid JSON");
   }
 
-  // 3. Validate AI response
+  // 4. Validate AI response
   const validation = validateAnalysisOutput(parsedResponse);
 
   if (!validation.success) {
@@ -68,16 +73,16 @@ export async function analyzeMessage(text) {
 
   const aiResult = validation.data;
 
-  // 4. Deterministic message risk
+  // 5. Deterministic message risk
   const messageRisk = calculateRiskScore(
     trimmedText,
     aiResult
   );
 
-  // 5. URL intelligence
+  // 6. URL intelligence
   const urlIntelligence = analyzeUrls(trimmedText);
 
-  // 6. Hybrid risk aggregation
+  // 7. Hybrid risk aggregation
   const hybridRisk = calculateHybridRisk({
     messageRiskScore: messageRisk.riskScore,
     urlRiskScore: urlIntelligence.detected
@@ -85,7 +90,7 @@ export async function analyzeMessage(text) {
       : null,
   });
 
-  // 7. Validate hybrid risk
+  // 8. Validate hybrid risk
   const hybridValidation = validateHybridRisk(hybridRisk);
 
   if (!hybridValidation.success) {
@@ -94,14 +99,21 @@ export async function analyzeMessage(text) {
 
   const validatedHybridRisk = hybridValidation.data;
 
-  // 8. Risk evidence / explainability
+  // 9. Risk evidence / explainability
   const riskEvidence = buildRiskEvidence({
     messageRisk,
     urlIntelligence,
     aiResult,
   });
 
-  // 9. Final structured response
+  // 10. Final risk decision
+  const riskDecision = buildRiskDecision({
+    classification: aiResult.classification,
+    riskScore: validatedHybridRisk.riskScore,
+    severity: validatedHybridRisk.severity,
+  });
+
+  // 11. Final structured response
   return {
     classification: aiResult.classification,
 
@@ -134,5 +146,7 @@ export async function analyzeMessage(text) {
     },
 
     riskEvidence,
+
+    riskDecision,
   };
 }
