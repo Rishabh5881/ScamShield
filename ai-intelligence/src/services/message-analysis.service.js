@@ -33,6 +33,14 @@ import {
   buildRiskDecision,
 } from "../risk/risk-decision.service.js";
 
+import {
+  applyRiskDecisionGuard,
+} from "../risk/risk-decision.guard.js";
+
+import {
+  validateRiskDecision,
+} from "../schemas/risk-decision.schema.js";
+
 export async function analyzeMessage(text) {
   // 1. Input validation
   if (!text || typeof text !== "string") {
@@ -106,14 +114,36 @@ export async function analyzeMessage(text) {
     aiResult,
   });
 
-  // 10. Final risk decision
+  // 10. Base risk decision
   const riskDecision = buildRiskDecision({
     classification: aiResult.classification,
     riskScore: validatedHybridRisk.riskScore,
     severity: validatedHybridRisk.severity,
   });
 
-  // 11. Final structured response
+  // 11. Decision guard
+  const guardedRiskDecision = applyRiskDecisionGuard({
+    classification: aiResult.classification,
+    riskScore: validatedHybridRisk.riskScore,
+    severity: validatedHybridRisk.severity,
+    urlIntelligence,
+    hybridRisk: validatedHybridRisk,
+    riskEvidence,
+    riskDecision,
+  });
+
+  // 12. Validate final risk decision
+  const riskDecisionValidation =
+    validateRiskDecision(guardedRiskDecision);
+
+  if (!riskDecisionValidation.success) {
+    throw new Error("Risk decision validation failed");
+  }
+
+  const validatedRiskDecision =
+    riskDecisionValidation.data;
+
+  // 13. Final structured response
   return {
     classification: aiResult.classification,
 
@@ -147,6 +177,6 @@ export async function analyzeMessage(text) {
 
     riskEvidence,
 
-    riskDecision,
+    riskDecision: validatedRiskDecision,
   };
 }
