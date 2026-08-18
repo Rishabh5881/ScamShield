@@ -33,7 +33,11 @@ function AppShell() {
 }
 
 export default function App() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loading } = useAuth();
+
+  if (loading) {
+    return <div className="auth-page"><div className="auth-card"><h1>Restoring your session.</h1><p>Checking your ScamShield account securely...</p></div></div>;
+  }
 
   if (!isAuthenticated) {
     return (

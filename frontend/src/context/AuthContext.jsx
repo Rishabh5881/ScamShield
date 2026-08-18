@@ -1,9 +1,10 @@
 import { createContext, useContext, useEffect, useState } from "react";
+import { getCurrentUser, loginUser, logoutUser, signupUser } from "../services/api";
 
 const AuthContext = createContext(null);
 const STORAGE_KEY = "scamshield:auth";
 
-function readStoredUser() {
+function readStoredAuth() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     return raw ? JSON.parse(raw) : null;
@@ -13,27 +14,64 @@ function readStoredUser() {
 }
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(readStoredUser);
+  const [auth, setAuth] = useState(readStoredAuth);
+  const [loading, setLoading] = useState(() => Boolean(readStoredAuth()?.token));
 
   useEffect(() => {
-    if (user) localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
-    else localStorage.removeItem(STORAGE_KEY);
-  }, [user]);
+    let cancelled = false;
+    async function restore() {
+      if (!auth?.token) {
+        setLoading(false);
+        return;
+      }
+      try {
+        const response = await getCurrentUser();
+        if (!cancelled && response?.user) {
+          setAuth(prev => ({ ...prev, user: response.user }));
+        }
+      } catch {
+        if (!cancelled) {
+          localStorage.removeItem(STORAGE_KEY);
+          setAuth(null);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    restore();
+    return () => { cancelled = true; };
+  }, []);
 
-  // Phase 1 is frontend-only: this simulates auth locally instead of
-  // calling a real backend. Any well-formed input succeeds.
-  const login = ({ email }) => {
-    setUser({ name: email.split("@")[0] || "Akshh", email, role: "Security Analyst" });
+  useEffect(() => {
+    try {
+      if (auth?.token) localStorage.setItem(STORAGE_KEY, JSON.stringify(auth));
+      else localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      // Keep authentication usable in memory if browser storage is unavailable.
+    }
+  }, [auth]);
+
+  const login = async (credentials) => {
+    const response = await loginUser(credentials);
+    if (!response?.user || !response?.token) throw new Error("Login response was incomplete.");
+    setAuth({ user: { ...response.user, role: "Security Analyst" }, token: response.token });
+    return response;
   };
 
-  const signup = ({ name, email }) => {
-    setUser({ name: name || "Akshh", email, role: "Security Analyst" });
+  const signup = async (credentials) => {
+    const response = await signupUser(credentials);
+    if (!response?.user || !response?.token) throw new Error("Signup response was incomplete.");
+    setAuth({ user: { ...response.user, role: "Security Analyst" }, token: response.token });
+    return response;
   };
 
-  const logout = () => setUser(null);
+  const logout = async () => {
+    await logoutUser();
+    setAuth(null);
+  };
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, signup, logout }}>
+    <AuthContext.Provider value={{ user: auth?.user || null, token: auth?.token || null, isAuthenticated: !!auth?.token, loading, login, signup, logout }}>
       {children}
     </AuthContext.Provider>
   );
