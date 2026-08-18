@@ -4,15 +4,16 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node --watch src/index.js",
-    "start": "node src/index.js",
+    "dev": "node --watch src/server.js",
+    "start": "node src/server.js",
+    "cli": "node src/index.js",
     "test:screenshot": "node test-screenshot.js"
   },
   "dependencies": {
     "@google/genai": "^2.17.1",
     "dotenv": "^16.4.7",
+    "express": "^5.2.1",
     "openai": "^5.23.2",
     "zod": "^3.25.76"
   }
 }
-
