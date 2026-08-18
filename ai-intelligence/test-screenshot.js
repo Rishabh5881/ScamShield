@@ -1,4 +1,3 @@
-
 import "dotenv/config";
 import fs from "fs";
 import path from "path";
@@ -7,40 +6,61 @@ import {
   analyzeScreenshot,
 } from "./src/screenshot/services/screenshot-analysis.service.js";
 
+console.log("\n=== ScamShield Screenshot Test ===\n");
+
 const imagePath = path.resolve(
   "test-assets/scam-message.jpeg"
 );
 
-if (!fs.existsSync(imagePath)) {
-  console.error("\n=== Screenshot Test Error ===\n");
-  console.error(`Screenshot not found: ${imagePath}`);
-  console.error(
-    "Add a PNG/JPEG/WEBP screenshot inside test-assets first."
-  );
-  process.exitCode = 1;
-} else {
-  try {
-    const imageBuffer = fs.readFileSync(imagePath);
+try {
+  console.log("1. Checking screenshot...");
 
-    const result = await analyzeScreenshot({
-      mimeType: "image/jpeg",
-      data: imageBuffer,
-    });
-
-    console.log(
-      "\n=== ScamShield Screenshot AI Result ===\n"
+  if (!fs.existsSync(imagePath)) {
+    throw new Error(
+      `Screenshot not found: ${imagePath}`
     );
-
-    console.log(
-      JSON.stringify(result, null, 2)
-    );
-  } catch (error) {
-    console.error(
-      "\n=== Screenshot AI Error ===\n"
-    );
-
-    console.error(error.message);
-    process.exitCode = 1;
   }
-}
 
+  const imageBuffer = fs.readFileSync(imagePath);
+
+  if (!imageBuffer || imageBuffer.length === 0) {
+    throw new Error(
+      "Screenshot file is empty."
+    );
+  }
+
+  console.log(
+    `2. Image loaded: ${(imageBuffer.length / 1024).toFixed(2)} KB`
+  );
+
+  console.log("3. Sending screenshot to AI...");
+
+  const result = await analyzeScreenshot({
+    mimeType: "image/jpeg",
+    data: imageBuffer,
+  });
+
+  console.log("4. AI response received.\n");
+
+  console.log(
+    "=== Screenshot AI Result ===\n"
+  );
+
+  console.log(
+    JSON.stringify(result, null, 2)
+  );
+
+  console.log(
+    "\n=== Screenshot Test PASSED ===\n"
+  );
+} catch (error) {
+  console.error(
+    "\n=== Screenshot Test FAILED ===\n"
+  );
+
+  console.error(
+    error?.message || "Screenshot analysis failed."
+  );
+
+  process.exitCode = 1;
+}
