@@ -16,7 +16,7 @@ export default function Signup() {
     setError("");
     if (!form.name.trim() || !form.email.trim() || !form.password) return setError("Complete all fields to create your account.");
     if (!/^\S+@\S+\.\S+$/.test(form.email)) return setError("Enter a valid email address.");
-    if (form.password.length < 6) return setError("Password must contain at least 6 characters.");
+    if (form.password.length < 8) return setError("Password must contain at least 8 characters.");
 
     setLoading(true);
     try {
@@ -43,7 +43,7 @@ export default function Signup() {
             <input type="email" name="scamshield-signup-email" autoComplete="off" placeholder="you@example.com" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
           </label>
           <label>Password
-            <input type="password" name="scamshield-demo-new-password" autoComplete="new-password" placeholder="Create a password" required minLength={6} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
+            <input type="password" name="scamshield-demo-new-password" autoComplete="new-password" placeholder="Create a password" required minLength={8} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
           </label>
           {error && <div className="form-error" role="alert">{error}</div>}
           <button className="primary-btn" type="submit" disabled={loading}>{loading ? "Creating account..." : "Create account"}</button>

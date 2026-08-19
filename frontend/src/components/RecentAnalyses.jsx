@@ -4,7 +4,7 @@ const icons = { message: MessageSquare, package: Package, briefcase: BriefcaseBu
 
 export default function RecentAnalyses({ items }) {
   return (
-    <div>
+    <div className="recent-analyses">
       {items.map((item) => {
         const Icon = icons[item.icon] || MessageSquare;
         return (

@@ -1,5 +1,5 @@
 import { useNavigate, NavLink } from "react-router-dom";
-import { LayoutDashboard, ScanSearch, History, ShieldCheck, UserRound, Settings, LogOut, X } from "lucide-react";
+import { LayoutDashboard, ScanSearch, History, ShieldCheck, UserRound, LogOut, Settings, X } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import BrandMark from "./BrandMark";
 
@@ -46,7 +46,13 @@ export default function Sidebar({ mobileOpen, onClose }) {
           <div><strong>Protection Active</strong><span>Monitoring enabled</span></div>
         </div>
 
-        <button className="nav-link" type="button"><Settings size={16} /><span>Settings</span></button>
+        <button
+          className="nav-link"
+          type="button"
+          onClick={() => navigate("/profile")}
+        >
+          <Settings size={18} strokeWidth={1.8} /><span>Settings</span>
+        </button>
         <button className="nav-link" type="button" onClick={onLogout}><LogOut size={16} /><span>Logout</span></button>
       </aside>
     </>

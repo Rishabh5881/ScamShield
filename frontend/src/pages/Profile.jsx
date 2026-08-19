@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { ShieldCheck, UserRound, Bell, LockKeyhole, Check, RotateCcw } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useSettings } from "../context/SettingsContext";
@@ -20,9 +21,20 @@ function Toggle({ checked, onChange, label }) {
 export default function Profile() {
   const { user } = useAuth();
   const { settings, updateSetting, resetSettings } = useSettings();
+  const [saveMessage, setSaveMessage] = useState("");
   const name = user?.name || "Akshh";
   const email = user?.email || "you@example.com";
   const initial = name.charAt(0).toUpperCase();
+
+  const changeSetting = (key, value) => {
+    updateSetting(key, value);
+    setSaveMessage(`${value ? "Enabled" : "Disabled"} — saved automatically.`);
+  };
+
+  const restoreDefaults = () => {
+    resetSettings();
+    setSaveMessage("Default preferences restored and saved.");
+  };
 
   return (
     <main className="page-content">
@@ -37,7 +49,7 @@ export default function Profile() {
       <section className="profile-card">
         <div className="avatar large">{initial}</div>
         <div><h2>{name}</h2><p>Security Analyst · ScamShield AI</p></div>
-        <span className="profile-status"><ShieldCheck size={13} /> Protection active</span>
+        <span className={`profile-status ${settings.threatMonitoring ? "" : "paused"}`}><ShieldCheck size={13} /> {settings.threatMonitoring ? "Protection active" : "Protection paused"}</span>
       </section>
 
       <section className="profile-settings">
@@ -55,11 +67,11 @@ export default function Profile() {
           <div className="setting-list">
             <div className="setting-row">
               <div><strong>Threat monitoring</strong><span>Keep security monitoring enabled.</span></div>
-              <Toggle label="Threat monitoring" checked={settings.threatMonitoring} onChange={v => updateSetting("threatMonitoring", v)} />
+              <Toggle label="Threat monitoring" checked={settings.threatMonitoring} onChange={v => changeSetting("threatMonitoring", v)} />
             </div>
             <div className="setting-row">
               <div><strong>Risk notifications</strong><span>Show alerts when a risk signal is detected.</span></div>
-              <Toggle label="Risk notifications" checked={settings.riskNotifications} onChange={v => updateSetting("riskNotifications", v)} />
+              <Toggle label="Risk notifications" checked={settings.riskNotifications} onChange={v => changeSetting("riskNotifications", v)} />
             </div>
           </div>
         </article>
@@ -69,19 +81,19 @@ export default function Profile() {
           <div className="setting-list">
             <div className="setting-row">
               <div><strong>Critical threat alerts</strong><span>Immediate warnings for critical detections.</span></div>
-              <Toggle label="Critical threat alerts" checked={settings.criticalAlerts} onChange={v => updateSetting("criticalAlerts", v)} />
+              <Toggle label="Critical threat alerts" checked={settings.criticalAlerts} onChange={v => changeSetting("criticalAlerts", v)} />
             </div>
             <div className="setting-row">
               <div><strong>Weekly security summary</strong><span>A weekly overview of your protection activity.</span></div>
-              <Toggle label="Weekly security summary" checked={settings.weeklySummary} onChange={v => updateSetting("weeklySummary", v)} />
+              <Toggle label="Weekly security summary" checked={settings.weeklySummary} onChange={v => changeSetting("weeklySummary", v)} />
             </div>
           </div>
         </article>
       </section>
 
       <section className="profile-actions">
-        <div><Check size={14} /> Settings are stored locally in this browser.</div>
-        <button className="ghost-btn" type="button" onClick={resetSettings}><RotateCcw size={13} /> Reset preferences</button>
+        <div aria-live="polite"><Check size={14} /> {saveMessage || "Settings are stored locally in this browser."}</div>
+        <button className="ghost-btn" type="button" onClick={restoreDefaults}><RotateCcw size={13} /> Reset preferences</button>
       </section>
     </main>
   );
