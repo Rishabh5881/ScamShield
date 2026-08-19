@@ -8,7 +8,7 @@ export default function StatCard({ label, value, change, tone = "blue" }) {
     <article className="stat-card">
       <div className="stat-head"><span>{label}</span><span className={`stat-icon ${tone === "red" ? "alert" : ""}`}><Icon size={15} /></span></div>
       <div className="stat-value">{value}</div>
-      <div className="stat-change"><span><TrendingUp size={9} /> {change}</span> vs. last period</div>
+      <div className="stat-change"><span><TrendingUp size={13} /> {change}</span> vs. last period</div>
     </article>
   );
 }

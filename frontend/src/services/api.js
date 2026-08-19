@@ -2,7 +2,9 @@ import axios from "axios";
 import { mockAnalysisResults } from "../data/mockData";
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000/api",
+  // In development Vite proxies this path to the backend. This avoids a
+  // browser CORS failure while still allowing a deployed API URL to be set.
+  baseURL: import.meta.env.VITE_API_URL || "/api",
   timeout: 10000,
   headers: { "Content-Type": "application/json" },
 });
