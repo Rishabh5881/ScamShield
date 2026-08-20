@@ -1,5 +1,5 @@
 import { ShieldCheck, ArrowUpRight } from "lucide-react";
-import { insights } from "../data/mockData";
+import { insights } from "../data/securityInsights";
 
 export default function SecurityInsights() {
   return (

@@ -22,6 +22,17 @@ function getStatusCode(error) {
   );
 }
 
+function getErrorDetails(error) {
+  return {
+    name: error?.name,
+    message: error?.message,
+    status: error?.status,
+    code: error?.code,
+    cause: error?.cause,
+    responseStatus: error?.response?.status,
+  };
+}
+
 function isRetryableError(error) {
   const status = Number(getStatusCode(error));
 
@@ -36,6 +47,18 @@ function isRetryableError(error) {
 
 function createProviderError(error) {
   const status = Number(getStatusCode(error));
+
+  if (status === 401 || status === 403) {
+    return new Error(
+      "Gemini API authentication failed. Check GEMINI_API_KEY."
+    );
+  }
+
+  if (status === 404) {
+    return new Error(
+      `Gemini model "${aiConfig.model}" was not found or is unavailable.`
+    );
+  }
 
   if (status === 429) {
     return new Error(
@@ -69,7 +92,10 @@ function createProviderError(error) {
     );
   }
 
-  return new Error("AI provider request failed.");
+  return new Error(
+    error?.message ||
+      "AI provider request failed."
+  );
 }
 
 export async function generateAIResponse({
@@ -78,8 +104,18 @@ export async function generateAIResponse({
 }) {
   let lastError;
 
+  console.log("GEMINI REQUEST:", {
+    model: aiConfig.model,
+    timeout: aiConfig.timeout,
+    hasApiKey: Boolean(aiConfig.apiKey),
+  });
+
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
+      console.log(
+        `GEMINI ATTEMPT ${attempt}/${MAX_RETRIES}`
+      );
+
       const response = await Promise.race([
         ai.models.generateContent({
           model: aiConfig.model,
@@ -94,13 +130,15 @@ export async function generateAIResponse({
         new Promise((_, reject) => {
           setTimeout(() => {
             reject(
-              new Error("AI provider request timed out")
+              new Error(
+                "AI provider request timed out"
+              )
             );
           }, aiConfig.timeout);
         }),
       ]);
 
-      const content = response.text;
+      const content = response?.text;
 
       if (!content) {
         throw new Error(
@@ -108,9 +146,16 @@ export async function generateAIResponse({
         );
       }
 
+      console.log("GEMINI RESPONSE RECEIVED");
+
       return content;
     } catch (error) {
       lastError = error;
+
+      console.error(
+        `GEMINI ATTEMPT ${attempt} FAILED:`,
+        getErrorDetails(error)
+      );
 
       const isTimeout =
         error?.message ===
@@ -128,6 +173,11 @@ export async function generateAIResponse({
       }
     }
   }
+
+  console.error(
+    "GEMINI FINAL ERROR:",
+    getErrorDetails(lastError)
+  );
 
   throw createProviderError(lastError);
 }

@@ -8,11 +8,15 @@ export function generateToken(user) {
     },
     process.env.JWT_SECRET,
     {
-      expiresIn: "7d",
+      expiresIn:
+        process.env.JWT_EXPIRES_IN || "7d",
     }
   );
 }
 
 export function verifyToken(token) {
-  return jwt.verify(token, process.env.JWT_SECRET);
+  return jwt.verify(
+    token,
+    process.env.JWT_SECRET
+  );
 }

@@ -6,8 +6,8 @@ const ai = new GoogleGenAI({
 });
 
 const MAX_SCREENSHOT_SIZE = 10 * 1024 * 1024;
-const MAX_RETRIES = 3;
-const RETRY_DELAY_MS = 1000;
+const REQUEST_TIMEOUT =
+  Number(process.env.AI_TIMEOUT_MS) || 60000;
 
 const ALLOWED_MIME_TYPES = [
   "image/png",
@@ -16,59 +16,9 @@ const ALLOWED_MIME_TYPES = [
   "image/webp",
 ];
 
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-function getStatusCode(error) {
-  return (
-    error?.status ??
-    error?.code ??
-    error?.error?.code ??
-    error?.response?.status ??
-    null
-  );
-}
-
-function isRetryableError(error) {
-  const status = Number(getStatusCode(error));
-
-  return [429, 500, 502, 503, 504].includes(status);
-}
-
-function createProviderError(error) {
-  const status = Number(getStatusCode(error));
-
-  if (status === 429) {
-    return new Error(
-      "AI provider rate limit reached. Please try again later."
-    );
-  }
-
-  if ([500, 502, 503, 504].includes(status)) {
-    return new Error(
-      "AI provider is temporarily unavailable. Please try again later."
-    );
-  }
-
-  if (error?.message === "AI provider request timed out") {
-    return new Error(
-      "AI provider request timed out. Please try again."
-    );
-  }
-
-  if (error?.message === "AI provider returned an empty response") {
-    return new Error(
-      "AI provider returned an empty response."
-    );
-  }
-
-  return new Error("AI screenshot analysis failed.");
-}
-
 function normalizeImageInput(image) {
   if (!image) {
-    throw new Error("Screenshot is required");
+    throw new Error("Screenshot is required.");
   }
 
   let mimeType = "image/png";
@@ -76,7 +26,7 @@ function normalizeImageInput(image) {
 
   if (Buffer.isBuffer(image)) {
     if (image.length === 0) {
-      throw new Error("Screenshot cannot be empty");
+      throw new Error("Screenshot cannot be empty.");
     }
 
     if (image.length > MAX_SCREENSHOT_SIZE) {
@@ -100,7 +50,7 @@ function normalizeImageInput(image) {
 
     if (!data) {
       throw new Error(
-        "Screenshot image data is required"
+        "Screenshot image data is required."
       );
     }
 
@@ -111,7 +61,9 @@ function normalizeImageInput(image) {
         : 0;
 
     if (size === 0) {
-      throw new Error("Screenshot cannot be empty");
+      throw new Error(
+        "Screenshot cannot be empty."
+      );
     }
 
     if (size > MAX_SCREENSHOT_SIZE) {
@@ -120,7 +72,9 @@ function normalizeImageInput(image) {
       );
     }
   } else {
-    throw new Error("Invalid screenshot input");
+    throw new Error(
+      "Invalid screenshot input."
+    );
   }
 
   return {
@@ -131,28 +85,98 @@ function normalizeImageInput(image) {
   };
 }
 
-async function generateWithTimeout(request) {
-  const timeout = Number(aiConfig.timeout) || 30000;
+function getErrorMessage(error) {
+  return (
+    error?.message ||
+    error?.error?.message ||
+    error?.response?.data?.error?.message ||
+    "AI screenshot analysis failed."
+  );
+}
 
-  let timer;
+function getStatusCode(error) {
+  return Number(
+    error?.status ||
+    error?.statusCode ||
+    error?.code ||
+    error?.error?.code ||
+    error?.response?.status ||
+    0
+  );
+}
 
-  try {
-    return await Promise.race([
-      request,
+function createProviderError(error) {
+  const status = getStatusCode(error);
+  const message = getErrorMessage(error);
 
-      new Promise((_, reject) => {
-        timer = setTimeout(() => {
-          reject(
-            new Error(
-              "AI provider request timed out"
-            )
-          );
-        }, timeout);
-      }),
-    ]);
-  } finally {
-    clearTimeout(timer);
+  console.error(
+    "========== SCREENSHOT AI ERROR =========="
+  );
+
+  console.error("Status:", status);
+  console.error("Message:", message);
+  console.error(error);
+
+  console.error(
+    "=========================================="
+  );
+
+  if (status === 400) {
+    return new Error(
+      `AI provider rejected the screenshot request: ${message}`
+    );
   }
+
+  if (status === 401 || status === 403) {
+    return new Error(
+      "AI provider authentication failed. Check the Gemini API key."
+    );
+  }
+
+  if (status === 429) {
+    return new Error(
+      "AI provider rate limit reached. Please try again later."
+    );
+  }
+
+  if (
+    status === 500 ||
+    status === 502 ||
+    status === 503 ||
+    status === 504
+  ) {
+    return new Error(
+      "AI provider is temporarily unavailable. Please try again later."
+    );
+  }
+
+  if (
+    message
+      .toLowerCase()
+      .includes("timeout")
+  ) {
+    return new Error(
+      "AI screenshot analysis timed out after 90 seconds."
+    );
+  }
+
+  return new Error(message);
+}
+
+async function generateWithTimeout(request) {
+  return Promise.race([
+    request,
+
+    new Promise((_, reject) => {
+      setTimeout(() => {
+        reject(
+          new Error(
+            "AI provider request timed out."
+          )
+        );
+      }, REQUEST_TIMEOUT);
+    }),
+  ]);
 }
 
 export async function generateScreenshotAIResponse({
@@ -160,66 +184,87 @@ export async function generateScreenshotAIResponse({
   userPrompt,
   image,
 }) {
-  const imagePart = normalizeImageInput(image);
+  const imagePart =
+    normalizeImageInput(image);
 
-  let lastError;
+  console.log(
+    "========== SCREENSHOT AI REQUEST =========="
+  );
 
-  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-    try {
-      const response = await generateWithTimeout(
+  console.log(
+    "Model:",
+    aiConfig.model
+  );
+
+  console.log(
+    "MIME:",
+    imagePart.mimeType
+  );
+
+  console.log(
+    "Image base64 size:",
+    imagePart.data.length
+  );
+
+  try {
+    const response =
+      await generateWithTimeout(
         ai.models.generateContent({
           model: aiConfig.model,
 
           contents: [
             {
               role: "user",
+
               parts: [
                 {
                   text: userPrompt,
                 },
+
                 {
-                  inlineData: imagePart,
+                  inlineData: {
+                    mimeType:
+                      imagePart.mimeType,
+
+                    data:
+                      imagePart.data,
+                  },
                 },
               ],
             },
           ],
 
           config: {
-            systemInstruction: systemPrompt,
+            systemInstruction:
+              systemPrompt,
+
             temperature: 0.2,
-            responseMimeType: "application/json",
+
+            responseMimeType:
+              "application/json",
           },
         })
       );
 
-      const content = response?.text?.trim();
+    const content =
+      response?.text?.trim();
 
-      if (!content) {
-        throw new Error(
-          "AI provider returned an empty response"
-        );
-      }
-
-      return content;
-    } catch (error) {
-      lastError = error;
-
-      const timeout =
-        error?.message ===
-        "AI provider request timed out";
-
-      if (
-        !timeout &&
-        !isRetryableError(error)
-      ) {
-        throw createProviderError(error);
-      }
-
-      if (attempt < MAX_RETRIES) {
-        await sleep(RETRY_DELAY_MS * attempt);
-      }
+    if (!content) {
+      throw new Error(
+        "AI provider returned an empty response."
+      );
     }
-  }
 
-  throw createProviderError(lastError);
+    console.log(
+      "SCREENSHOT AI RESPONSE RECEIVED"
+    );
+
+    console.log(
+      "=========================================="
+    );
+
+    return content;
+  } catch (error) {
+    throw createProviderError(error);
+  }
 }
