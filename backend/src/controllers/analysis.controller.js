@@ -1,23 +1,47 @@
 import { createAnalysis } from "../services/analysis.service.js";
 
 const AI_SERVICE_URL =
-  process.env.AI_SERVICE_URL || "http://localhost:6100";
+  process.env.AI_SERVICE_URL ||
+  "http://localhost:6100";
+
+/**
+ * Create a sanitized error while preserving
+ * the AI service HTTP status and error code.
+ */
+function createAIServiceError(
+  message,
+  status = 502,
+  code = "AI_SERVICE_ERROR"
+) {
+  const error = new Error(message);
+
+  error.status = status;
+  error.code = code;
+
+  return error;
+}
 
 /**
  * Analyze a text message through the AI Intelligence Service.
  */
-async function analyzeMessageWithAI(originalInput) {
+async function analyzeMessageWithAI(
+  originalInput
+) {
   const url = `${AI_SERVICE_URL}/analyze`;
 
-  console.log("Sending message to AI:", {
-    url,
-  });
+  console.log(
+    "Sending message to AI:",
+    {
+      url,
+    }
+  );
 
   try {
     const response = await fetch(url, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
+        "Content-Type":
+          "application/json",
       },
       body: JSON.stringify({
         message: originalInput,
@@ -29,23 +53,38 @@ async function analyzeMessageWithAI(originalInput) {
     try {
       payload = await response.json();
     } catch {
-      throw new Error(
-        "AI service returned an invalid response."
+      throw createAIServiceError(
+        "AI service returned an invalid response.",
+        502,
+        "AI_INVALID_RESPONSE"
       );
     }
 
     if (!response.ok) {
-      throw new Error(
+      const status = response.status;
+
+      const code =
+        payload?.error?.code ||
+        payload?.code ||
+        "AI_SERVICE_ERROR";
+
+      const message =
+        payload?.error?.message ||
         payload?.message ||
-          payload?.error ||
-          `AI service returned HTTP ${response.status}.`
+        "AI service request failed.";
+
+      throw createAIServiceError(
+        message,
+        status,
+        code
       );
     }
 
     if (!payload?.result) {
-      throw new Error(
-        payload?.message ||
-          "AI service returned an empty analysis result."
+      throw createAIServiceError(
+        "AI service returned an empty analysis result.",
+        502,
+        "AI_INVALID_RESPONSE"
       );
     }
 
@@ -53,19 +92,42 @@ async function analyzeMessageWithAI(originalInput) {
   } catch (error) {
     console.error(
       "BACKEND → AI MESSAGE ERROR:",
-      error
+      {
+        name: error?.name,
+        code: error?.code,
+        status: error?.status,
+        message: error?.message,
+      }
     );
 
+    /*
+     * Preserve AI service errors.
+     *
+     * Especially important for:
+     * 429 AI quota
+     * 503 AI unavailable
+     * 502 invalid AI response
+     */
     if (
-      error?.message?.includes("AI service") ||
-      error?.message?.includes("AI provider")
+      error?.status ||
+      error?.code ===
+        "AI_QUOTA_EXCEEDED"
     ) {
       throw error;
     }
 
-    throw new Error(
-      `Could not connect to AI service at ${AI_SERVICE_URL}.`
-    );
+    /*
+     * Network-level failure:
+     * AI service could not be reached.
+     */
+    const networkError =
+      createAIServiceError(
+        "Could not connect to AI service.",
+        503,
+        "AI_SERVICE_UNAVAILABLE"
+      );
+
+    throw networkError;
   }
 }
 
@@ -73,28 +135,38 @@ async function analyzeMessageWithAI(originalInput) {
  * Analyze a screenshot through the AI Intelligence Service.
  *
  * The original uploaded file is converted to a Blob and sent
- * as multipart/form-data using the field name expected by the
- * AI service: "image".
+ * as multipart/form-data using the field name expected by
+ * the AI service: "image".
  */
-async function analyzeScreenshotWithAI(file) {
+async function analyzeScreenshotWithAI(
+  file
+) {
   if (!file?.buffer) {
-    throw new Error(
-      "Screenshot file is required."
+    throw createAIServiceError(
+      "Screenshot file is required.",
+      400,
+      "SCREENSHOT_REQUIRED"
     );
   }
 
   const url =
     `${AI_SERVICE_URL}/analyze-screenshot`;
 
-  console.log("Sending screenshot to AI:", {
-    url,
-    fileName: file.originalname,
-    mimeType: file.mimetype,
-    size: file.size,
-  });
+  console.log(
+    "Sending screenshot to AI:",
+    {
+      url,
+      fileName:
+        file.originalname,
+      mimeType:
+        file.mimetype,
+      size: file.size,
+    }
+  );
 
   try {
-    const formData = new FormData();
+    const formData =
+      new FormData();
 
     const blob = new Blob(
       [file.buffer],
@@ -108,46 +180,74 @@ async function analyzeScreenshotWithAI(file) {
     formData.append(
       "image",
       blob,
-      file.originalname || "screenshot.png"
+      file.originalname ||
+        "screenshot.png"
     );
 
-    const response = await fetch(url, {
-      method: "POST",
-      body: formData,
-    });
+    const response = await fetch(
+      url,
+      {
+        method: "POST",
+        body: formData,
+      }
+    );
 
     let payload = null;
 
     try {
-      payload = await response.json();
+      payload =
+        await response.json();
     } catch {
-      throw new Error(
-        "AI screenshot service returned an invalid response."
+      throw createAIServiceError(
+        "AI screenshot service returned an invalid response.",
+        502,
+        "AI_INVALID_RESPONSE"
       );
     }
 
     console.log(
       "AI SCREENSHOT RESPONSE:",
       {
-        status: response.status,
-        ok: response.ok,
-        hasResult: Boolean(payload?.result),
-        message: payload?.message,
+        status:
+          response.status,
+        ok:
+          response.ok,
+        hasResult:
+          Boolean(
+            payload?.result
+          ),
+        code:
+          payload?.error?.code ||
+          payload?.code,
       }
     );
 
     if (!response.ok) {
-      throw new Error(
+      const status =
+        response.status;
+
+      const code =
+        payload?.error?.code ||
+        payload?.code ||
+        "AI_SERVICE_ERROR";
+
+      const message =
+        payload?.error?.message ||
         payload?.message ||
-          payload?.error ||
-          `AI screenshot service returned HTTP ${response.status}.`
+        "AI screenshot service request failed.";
+
+      throw createAIServiceError(
+        message,
+        status,
+        code
       );
     }
 
     if (!payload?.result) {
-      throw new Error(
-        payload?.message ||
-          "AI screenshot service returned an empty analysis result."
+      throw createAIServiceError(
+        "AI screenshot service returned an empty analysis result.",
+        502,
+        "AI_INVALID_RESPONSE"
       );
     }
 
@@ -155,20 +255,36 @@ async function analyzeScreenshotWithAI(file) {
   } catch (error) {
     console.error(
       "BACKEND → AI SCREENSHOT ERROR:",
-      error
+      {
+        name: error?.name,
+        code: error?.code,
+        status: error?.status,
+        message: error?.message,
+      }
     );
 
+    /*
+     * Preserve AI service errors.
+     */
     if (
-      error?.message?.includes("AI service") ||
-      error?.message?.includes("AI provider") ||
-      error?.message?.includes("screenshot")
+      error?.status ||
+      error?.code ===
+        "AI_QUOTA_EXCEEDED"
     ) {
       throw error;
     }
 
-    throw new Error(
-      `Could not connect to AI screenshot service at ${AI_SERVICE_URL}.`
-    );
+    /*
+     * Network-level failure.
+     */
+    const networkError =
+      createAIServiceError(
+        "Could not connect to AI screenshot service.",
+        503,
+        "AI_SERVICE_UNAVAILABLE"
+      );
+
+    throw networkError;
   }
 }
 
@@ -194,7 +310,8 @@ export async function createAnalysisController(
       "ANALYSIS REQUEST:",
       {
         inputType,
-        hasFile: Boolean(req.file),
+        hasFile:
+          Boolean(req.file),
         fileName:
           req.file?.originalname,
         mimeType:
@@ -217,7 +334,9 @@ export async function createAnalysisController(
     /*
      * MESSAGE ANALYSIS
      */
-    if (inputType === "message") {
+    if (
+      inputType === "message"
+    ) {
       if (
         typeof originalInput !==
           "string" ||
@@ -243,7 +362,9 @@ export async function createAnalysisController(
      * pipeline. The AI service performs URL intelligence
      * and hybrid risk analysis.
      */
-    else if (inputType === "url") {
+    else if (
+      inputType === "url"
+    ) {
       if (
         typeof originalInput !==
           "string" ||
@@ -266,7 +387,8 @@ export async function createAnalysisController(
      * SCREENSHOT ANALYSIS
      */
     else if (
-      inputType === "screenshot"
+      inputType ===
+      "screenshot"
     ) {
       if (!req.file) {
         return res.status(400).json({
@@ -310,8 +432,10 @@ export async function createAnalysisController(
         userId: req.user.id,
         inputType,
         originalInput:
-          inputType === "screenshot"
-            ? req.file?.originalname ||
+          inputType ===
+          "screenshot"
+            ? req.file
+                ?.originalname ||
               "Screenshot"
             : originalInput.trim(),
         result: analysisResult,
@@ -332,6 +456,16 @@ export async function createAnalysisController(
     );
 
     console.error(
+      "Code:",
+      error?.code
+    );
+
+    console.error(
+      "Status:",
+      error?.status
+    );
+
+    console.error(
       "Stack:",
       error?.stack
     );
@@ -340,6 +474,93 @@ export async function createAnalysisController(
       "===================================="
     );
 
-    next(error);
+    /*
+     * --------------------------------------
+     * AI QUOTA / RATE LIMIT
+     * --------------------------------------
+     *
+     * Preserve 429 instead of converting it
+     * into a generic 500.
+     */
+    if (
+      error?.status === 429 ||
+      error?.code ===
+        "AI_QUOTA_EXCEEDED"
+    ) {
+      return res.status(429).json({
+        success: false,
+        error: {
+          code:
+            "AI_QUOTA_EXCEEDED",
+          message:
+            "AI analysis is temporarily unavailable because the AI provider quota has been reached.",
+          retryable: true,
+        },
+      });
+    }
+
+    /*
+     * --------------------------------------
+     * AI SERVICE UNAVAILABLE
+     * --------------------------------------
+     */
+    if (
+      error?.status === 503 ||
+      error?.code ===
+        "AI_SERVICE_UNAVAILABLE"
+    ) {
+      return res.status(503).json({
+        success: false,
+        error: {
+          code:
+            "AI_SERVICE_UNAVAILABLE",
+          message:
+            "AI analysis service is temporarily unavailable. Please try again later.",
+          retryable: true,
+        },
+      });
+    }
+
+    /*
+     * --------------------------------------
+     * INVALID AI RESPONSE
+     * --------------------------------------
+     */
+    if (
+      error?.status === 502 ||
+      error?.code ===
+        "AI_INVALID_RESPONSE"
+    ) {
+      return res.status(502).json({
+        success: false,
+        error: {
+          code:
+            "AI_INVALID_RESPONSE",
+          message:
+            "AI analysis returned an invalid response. Please try again.",
+          retryable: true,
+        },
+      });
+    }
+
+    /*
+     * --------------------------------------
+     * OTHER UNEXPECTED ANALYSIS ERROR
+     * --------------------------------------
+     */
+    console.error(
+      "Analysis failed with an unexpected error."
+    );
+
+    return res.status(500).json({
+      success: false,
+      error: {
+        code:
+          "ANALYSIS_FAILED",
+        message:
+          "Unable to complete analysis.",
+        retryable: true,
+      },
+    });
   }
 }

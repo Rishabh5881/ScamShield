@@ -51,6 +51,99 @@ function formatBytes(bytes) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+/**
+ * Convert any API/frontend error into a safe user-facing string.
+ *
+ * Important:
+ * Never render an object directly in React.
+ * This prevents:
+ * [object Object]
+ *
+ * It also prevents raw provider/internal error details
+ * from being shown to the user.
+ */
+function getSafeErrorMessage(error) {
+  if (!error) {
+    return "Unable to complete the analysis.";
+  }
+
+  const code =
+    error?.code ||
+    error?.response?.data?.error?.code ||
+    error?.response?.data?.code;
+
+  const status =
+    error?.response?.status ||
+    error?.status;
+
+  // AI provider quota / rate limit
+  if (
+    status === 429 ||
+    code === "AI_QUOTA_EXCEEDED"
+  ) {
+    return "AI analysis quota has been reached. Please try again later.";
+  }
+
+  // AI service unavailable
+  if (
+    status === 503 ||
+    code === "AI_SERVICE_UNAVAILABLE"
+  ) {
+    return "AI analysis service is temporarily unavailable. Please try again later.";
+  }
+
+  // Invalid AI response
+  if (
+    status === 502 ||
+    code === "AI_SERVICE_ERROR" ||
+    code === "AI_INVALID_RESPONSE"
+  ) {
+    return "AI analysis is temporarily unavailable. Please try again later.";
+  }
+
+  // Authentication
+  if (
+    status === 401 ||
+    code === "AUTH"
+  ) {
+    return "Your session has expired. Please sign in again.";
+  }
+
+  // Timeout
+  if (
+    code === "TIMEOUT" ||
+    error?.code === "ECONNABORTED" ||
+    error?.code === "ETIMEDOUT"
+  ) {
+    return "Request timed out. Please try again.";
+  }
+
+  const responseError =
+    error?.response?.data?.error;
+
+  const responseMessage =
+    error?.response?.data?.message;
+
+  const directMessage =
+    error?.message;
+
+  // Only accept strings.
+  if (typeof responseError === "string") {
+    return responseError;
+  }
+
+  if (typeof responseMessage === "string") {
+    return responseMessage;
+  }
+
+  if (typeof directMessage === "string") {
+    return directMessage;
+  }
+
+  // Never render objects/arrays directly.
+  return "Unable to complete the analysis.";
+}
+
 export default function Analyze() {
   const { settings } = useSettings();
 
@@ -171,10 +264,10 @@ export default function Analyze() {
     } catch (err) {
       console.error("ANALYSIS UI ERROR:", err);
 
-      setError(
-        err?.message ||
-          "Unable to complete the analysis."
-      );
+      const safeMessage =
+        getSafeErrorMessage(err);
+
+      setError(safeMessage);
       setStatus("error");
     }
   }
@@ -516,8 +609,9 @@ export default function Analyze() {
               </h3>
 
               <p>
-                {error ||
-                  "Unable to complete the analysis."}
+                {typeof error === "string"
+                  ? error
+                  : "Unable to complete the analysis."}
               </p>
 
               <button

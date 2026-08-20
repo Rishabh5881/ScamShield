@@ -128,15 +128,31 @@ function createProviderError(error) {
   }
 
   if (status === 401 || status === 403) {
-    return new Error(
+    const providerError = new Error(
       "AI provider authentication failed. Check the Gemini API key."
     );
+
+    providerError.code =
+      "AI_PROVIDER_AUTH_ERROR";
+
+    providerError.status = 502;
+    providerError.retryable = true;
+
+    return providerError;
   }
 
   if (status === 429) {
-    return new Error(
+    const providerError = new Error(
       "AI provider rate limit reached. Please try again later."
     );
+
+    providerError.code =
+      "AI_RATE_LIMITED";
+
+    providerError.status = 429;
+    providerError.retryable = true;
+
+    return providerError;
   }
 
   if (
