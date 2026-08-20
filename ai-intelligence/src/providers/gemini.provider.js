@@ -1,9 +1,4 @@
-import { GoogleGenAI } from "@google/genai";
 import { aiConfig } from "../config/ai.config.js";
-
-const ai = new GoogleGenAI({
-  apiKey: aiConfig.apiKey,
-});
 
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 1000;
@@ -20,8 +15,8 @@ function sleep(ms) {
 function getStatusCode(error) {
   const candidates = [
     error?.status,
+    error?.statusCode,
     error?.code,
-    error?.error?.code,
     error?.response?.status,
   ];
 
@@ -60,28 +55,19 @@ function getErrorDetails(error) {
 }
 
 // ==========================================
-// QUOTA DETECTION
+// RETRY POLICY
 // ==========================================
 
-function isDailyQuotaExceeded(error) {
-  const message =
-    getErrorMessage(error);
+function isRetryableError(error) {
+  const status =
+    getStatusCode(error);
 
   return (
-    message.includes(
-      "GenerateRequestsPerDayPerProject-FreeTier"
-    ) ||
-    message.includes(
-      "generate_content_free_tier_requests"
-    ) ||
-    (
-      message.includes(
-        "Quota exceeded for metric"
-      ) &&
-      message.includes(
-        "PerDayPerProject"
-      )
-    )
+    status === 429 ||
+    status === 500 ||
+    status === 502 ||
+    status === 503 ||
+    status === 504
   );
 }
 
@@ -93,12 +79,6 @@ function getRetryDelayMs(error) {
   const message =
     getErrorMessage(error);
 
-  /*
-   * Gemini commonly returns:
-   *
-   * retryDelay":"39s"
-   */
-
   const retryDelayMatch =
     message.match(
       /retryDelay["']?\s*:\s*["'](\d+(?:\.\d+)?)s["']/
@@ -106,13 +86,9 @@ function getRetryDelayMs(error) {
 
   if (retryDelayMatch) {
     const seconds =
-      Number(
-        retryDelayMatch[1]
-      );
+      Number(retryDelayMatch[1]);
 
-    if (
-      Number.isFinite(seconds)
-    ) {
+    if (Number.isFinite(seconds)) {
       return Math.min(
         Math.max(
           seconds * 1000,
@@ -127,34 +103,6 @@ function getRetryDelayMs(error) {
 }
 
 // ==========================================
-// RETRY POLICY
-// ==========================================
-
-function isRetryableError(error) {
-  const status =
-    getStatusCode(error);
-
-  /*
-   * Daily quota cannot be fixed
-   * by retrying.
-   */
-  if (
-    status === 429 &&
-    isDailyQuotaExceeded(error)
-  ) {
-    return false;
-  }
-
-  return (
-    status === 429 ||
-    status === 500 ||
-    status === 502 ||
-    status === 503 ||
-    status === 504
-  );
-}
-
-// ==========================================
 // PROVIDER ERROR
 // ==========================================
 
@@ -162,10 +110,13 @@ function createProviderError(error) {
   const status =
     getStatusCode(error);
 
+  const message =
+    getErrorMessage(error);
+
   let providerError;
 
   // ----------------------------------------
-  // AUTH
+  // AUTH / FORBIDDEN
   // ----------------------------------------
 
   if (
@@ -174,7 +125,7 @@ function createProviderError(error) {
   ) {
     providerError =
       new Error(
-        "Gemini API authentication failed. Check GEMINI_API_KEY."
+        "NaraRouter authentication or access failed. Check NARA_API_KEY and account access."
       );
 
     providerError.code =
@@ -183,7 +134,8 @@ function createProviderError(error) {
     providerError.status =
       502;
 
-    providerError.retryable = true;
+    providerError.retryable =
+      false;
 
     return providerError;
   }
@@ -195,7 +147,7 @@ function createProviderError(error) {
   if (status === 404) {
     providerError =
       new Error(
-        `Gemini model "${aiConfig.model}" was not found or is unavailable.`
+        `NaraRouter model "${aiConfig.model}" was not found or is unavailable.`
       );
 
     providerError.code =
@@ -204,41 +156,17 @@ function createProviderError(error) {
     providerError.status =
       502;
 
-    providerError.retryable = false;
+    providerError.retryable =
+      false;
 
     return providerError;
   }
 
   // ----------------------------------------
-  // 429 QUOTA / RATE LIMIT
+  // RATE LIMIT / QUOTA
   // ----------------------------------------
 
   if (status === 429) {
-    if (
-      isDailyQuotaExceeded(error)
-    ) {
-      providerError =
-        new Error(
-          "AI daily quota has been reached. Please try again later or use another Gemini API project/model with available quota."
-        );
-
-      /*
-       * IMPORTANT:
-       * Preserve 429 all the way to
-       * the backend and frontend.
-       */
-      providerError.code =
-        "AI_QUOTA_EXCEEDED";
-
-      providerError.status =
-        429;
-
-      providerError.retryable =
-        false;
-
-      return providerError;
-    }
-
     providerError =
       new Error(
         "AI provider rate limit reached. Please try again later."
@@ -288,7 +216,7 @@ function createProviderError(error) {
   // ----------------------------------------
 
   if (
-    error?.message ===
+    message ===
     "AI provider request timed out"
   ) {
     providerError =
@@ -313,7 +241,7 @@ function createProviderError(error) {
   // ----------------------------------------
 
   if (
-    error?.message ===
+    message ===
     "AI provider returned an empty response"
   ) {
     providerError =
@@ -339,7 +267,7 @@ function createProviderError(error) {
 
   providerError =
     new Error(
-      error?.message ||
+      message ||
         "AI provider request failed."
     );
 
@@ -356,6 +284,136 @@ function createProviderError(error) {
 }
 
 // ==========================================
+// NARAROUTER REQUEST
+// ==========================================
+
+async function generateNaraResponse({
+  systemPrompt,
+  userPrompt,
+}) {
+  const controller =
+    new AbortController();
+
+  const timeout =
+    setTimeout(() => {
+      controller.abort();
+    }, aiConfig.timeout);
+
+  try {
+    const response =
+      await fetch(
+        `${aiConfig.baseUrl}/chat/completions`,
+        {
+          method: "POST",
+
+          headers: {
+            Authorization:
+              `Bearer ${aiConfig.apiKey}`,
+
+            "Content-Type":
+              "application/json",
+          },
+
+          body: JSON.stringify({
+            model:
+              aiConfig.model,
+
+            messages: [
+              {
+                role: "system",
+                content:
+                  systemPrompt,
+              },
+              {
+                role: "user",
+                content:
+                  userPrompt,
+              },
+            ],
+
+            temperature: 0.2,
+
+            response_format: {
+              type: "json_object",
+            },
+          }),
+
+          signal:
+            controller.signal,
+        }
+      );
+
+    const responseText =
+      await response.text();
+
+    if (!response.ok) {
+      let errorData;
+
+      try {
+        errorData =
+          JSON.parse(responseText);
+      } catch {
+        errorData = null;
+      }
+
+      const providerError =
+        new Error(
+          errorData?.error?.message ||
+            responseText ||
+            "NaraRouter request failed."
+        );
+
+      providerError.status =
+        response.status;
+
+      providerError.response = {
+        status:
+          response.status,
+        data:
+          errorData,
+      };
+
+      throw providerError;
+    }
+
+    let data;
+
+    try {
+      data =
+        JSON.parse(responseText);
+    } catch {
+      throw new Error(
+        "NaraRouter returned invalid JSON."
+      );
+    }
+
+    const content =
+      data?.choices?.[0]?.message?.content;
+
+    if (!content) {
+      throw new Error(
+        "AI provider returned an empty response"
+      );
+    }
+
+    return content;
+  } catch (error) {
+    if (
+      error?.name ===
+      "AbortError"
+    ) {
+      throw new Error(
+        "AI provider request timed out"
+      );
+    }
+
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+// ==========================================
 // GENERATE AI RESPONSE
 // ==========================================
 
@@ -366,12 +424,21 @@ export async function generateAIResponse({
   let lastError = null;
 
   console.log(
-    "GEMINI REQUEST:",
+    "NARAROUTER REQUEST:",
     {
-      model: aiConfig.model,
-      timeout: aiConfig.timeout,
+      model:
+        aiConfig.model,
+
+      timeout:
+        aiConfig.timeout,
+
       hasApiKey:
-        Boolean(aiConfig.apiKey),
+        Boolean(
+          aiConfig.apiKey
+        ),
+
+      baseUrl:
+        aiConfig.baseUrl,
     }
   );
 
@@ -382,57 +449,26 @@ export async function generateAIResponse({
   ) {
     try {
       console.log(
-        `GEMINI ATTEMPT ${attempt}/${MAX_RETRIES}`
+        `NARAROUTER ATTEMPT ${attempt}/${MAX_RETRIES}`
       );
 
-      const response =
-        await Promise.race([
-          ai.models.generateContent({
-            model: aiConfig.model,
-            contents: userPrompt,
-            config: {
-              systemInstruction:
-                systemPrompt,
-
-              temperature: 0.2,
-
-              responseMimeType:
-                "application/json",
-            },
-          }),
-
-          new Promise(
-            (_, reject) => {
-              setTimeout(() => {
-                reject(
-                  new Error(
-                    "AI provider request timed out"
-                  )
-                );
-              }, aiConfig.timeout);
-            }
-          ),
-        ]);
-
       const content =
-        response?.text;
-
-      if (!content) {
-        throw new Error(
-          "AI provider returned an empty response"
-        );
-      }
+        await generateNaraResponse({
+          systemPrompt,
+          userPrompt,
+        });
 
       console.log(
-        "GEMINI RESPONSE RECEIVED"
+        "NARAROUTER RESPONSE RECEIVED"
       );
 
       return content;
     } catch (error) {
-      lastError = error;
+      lastError =
+        error;
 
       console.error(
-        `GEMINI ATTEMPT ${attempt} FAILED:`,
+        `NARAROUTER ATTEMPT ${attempt} FAILED:`,
         getErrorDetails(error)
       );
 
@@ -442,23 +478,6 @@ export async function generateAIResponse({
       const isTimeout =
         error?.message ===
         "AI provider request timed out";
-
-      // --------------------------------------
-      // DAILY QUOTA
-      // --------------------------------------
-
-      if (
-        status === 429 &&
-        isDailyQuotaExceeded(error)
-      ) {
-        console.error(
-          "GEMINI DAILY QUOTA EXCEEDED - NO RETRY"
-        );
-
-        throw createProviderError(
-          error
-        );
-      }
 
       // --------------------------------------
       // NON-RETRYABLE
@@ -484,7 +503,9 @@ export async function generateAIResponse({
           RETRY_DELAY_MS *
           attempt;
 
-        if (status === 429) {
+        if (
+          status === 429
+        ) {
           delayMs =
             getRetryDelayMs(
               error
@@ -492,7 +513,7 @@ export async function generateAIResponse({
         }
 
         console.log(
-          `GEMINI RETRYING IN ${delayMs}ms...`
+          `NARAROUTER RETRYING IN ${delayMs}ms...`
         );
 
         await sleep(
@@ -503,7 +524,7 @@ export async function generateAIResponse({
   }
 
   console.error(
-    "GEMINI FINAL ERROR:",
+    "NARAROUTER FINAL ERROR:",
     getErrorDetails(
       lastError
     )

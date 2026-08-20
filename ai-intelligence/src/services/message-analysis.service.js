@@ -57,7 +57,7 @@ export async function analyzeMessage(text) {
     throw new Error("Message is too long");
   }
 
-  // 2. Gemini AI analysis
+  // 2. AI analysis
   const rawResponse = await generateAIResponse({
     systemPrompt: messageSystemPrompt,
     userPrompt: buildMessageUserPrompt(trimmedText),
@@ -68,76 +68,191 @@ export async function analyzeMessage(text) {
 
   try {
     parsedResponse = JSON.parse(rawResponse);
-  } catch {
+  } catch (error) {
+    console.error(
+      "========== AI JSON PARSE ERROR =========="
+    );
+
+    console.error(
+      "Raw AI response:",
+      rawResponse
+    );
+
+    console.error(
+      "=========================================="
+    );
+
     throw new Error("AI returned invalid JSON");
   }
 
   // 4. Validate AI response
-  const validation = validateAnalysisOutput(parsedResponse);
+  const validation =
+    validateAnalysisOutput(parsedResponse);
 
   if (!validation.success) {
-    throw new Error("AI response failed schema validation");
+    console.error(
+      "========== AI SCHEMA VALIDATION ERROR =========="
+    );
+
+    console.error(
+      "Validation issues:",
+      validation.error.issues
+    );
+
+    console.error(
+      "AI response received:",
+      JSON.stringify(
+        parsedResponse,
+        null,
+        2
+      )
+    );
+
+    console.error(
+      "==============================================="
+    );
+
+    throw new Error(
+      "AI response failed schema validation"
+    );
   }
 
-  const aiResult = validation.data;
+  const aiResult =
+    validation.data;
 
   // 5. Deterministic message risk
-  const messageRisk = calculateRiskScore(
-    trimmedText,
-    aiResult
-  );
+  const messageRisk =
+    calculateRiskScore(
+      trimmedText,
+      aiResult
+    );
 
   // 6. URL intelligence
-  const urlIntelligence = analyzeUrls(trimmedText);
+  const urlIntelligence =
+    analyzeUrls(trimmedText);
 
   // 7. Hybrid risk aggregation
-  const hybridRisk = calculateHybridRisk({
-    messageRiskScore: messageRisk.riskScore,
-    urlRiskScore: urlIntelligence.detected
-      ? urlIntelligence.overallRiskScore
-      : null,
-  });
+  const hybridRisk =
+    calculateHybridRisk({
+      messageRiskScore:
+        messageRisk.riskScore,
+
+      urlRiskScore:
+        urlIntelligence.detected
+          ? urlIntelligence.overallRiskScore
+          : null,
+    });
 
   // 8. Validate hybrid risk
-  const hybridValidation = validateHybridRisk(hybridRisk);
+  const hybridValidation =
+    validateHybridRisk(
+      hybridRisk
+    );
 
   if (!hybridValidation.success) {
-    throw new Error("Hybrid risk validation failed");
+    console.error(
+      "========== HYBRID RISK VALIDATION ERROR =========="
+    );
+
+    console.error(
+      hybridValidation.error.issues
+    );
+
+    console.error(
+      "Hybrid risk:",
+      JSON.stringify(
+        hybridRisk,
+        null,
+        2
+      )
+    );
+
+    console.error(
+      "=================================================="
+    );
+
+    throw new Error(
+      "Hybrid risk validation failed"
+    );
   }
 
-  const validatedHybridRisk = hybridValidation.data;
+  const validatedHybridRisk =
+    hybridValidation.data;
 
   // 9. Risk evidence / explainability
-  const riskEvidence = buildRiskEvidence({
-    messageRisk,
-    urlIntelligence,
-    aiResult,
-  });
+  const riskEvidence =
+    buildRiskEvidence({
+      messageRisk,
+      urlIntelligence,
+      aiResult,
+    });
 
   // 10. Base risk decision
-  const riskDecision = buildRiskDecision({
-    classification: aiResult.classification,
-    riskScore: validatedHybridRisk.riskScore,
-    severity: validatedHybridRisk.severity,
-  });
+  const riskDecision =
+    buildRiskDecision({
+      classification:
+        aiResult.classification,
+
+      riskScore:
+        validatedHybridRisk.riskScore,
+
+      severity:
+        validatedHybridRisk.severity,
+    });
 
   // 11. Decision guard
-  const guardedRiskDecision = applyRiskDecisionGuard({
-    classification: aiResult.classification,
-    riskScore: validatedHybridRisk.riskScore,
-    severity: validatedHybridRisk.severity,
-    urlIntelligence,
-    hybridRisk: validatedHybridRisk,
-    riskEvidence,
-    riskDecision,
-  });
+  const guardedRiskDecision =
+    applyRiskDecisionGuard({
+      classification:
+        aiResult.classification,
+
+      riskScore:
+        validatedHybridRisk.riskScore,
+
+      severity:
+        validatedHybridRisk.severity,
+
+      urlIntelligence,
+
+      hybridRisk:
+        validatedHybridRisk,
+
+      riskEvidence,
+
+      riskDecision,
+    });
 
   // 12. Validate final risk decision
   const riskDecisionValidation =
-    validateRiskDecision(guardedRiskDecision);
+    validateRiskDecision(
+      guardedRiskDecision
+    );
 
   if (!riskDecisionValidation.success) {
-    throw new Error("Risk decision validation failed");
+    console.error(
+      "========== RISK DECISION VALIDATION ERROR =========="
+    );
+
+    console.error(
+      riskDecisionValidation.error.issues
+    );
+
+    console.error(
+      "Risk decision:",
+      JSON.stringify(
+        guardedRiskDecision,
+        null,
+        2
+      )
+    );
+
+    console.error(
+      "===================================================="
+    );
+
+    throw new Error(
+      "Risk decision validation failed"
+    );
   }
 
   const validatedRiskDecision =
@@ -145,38 +260,53 @@ export async function analyzeMessage(text) {
 
   // 13. Final structured response
   return {
-    classification: aiResult.classification,
+    classification:
+      aiResult.classification,
 
-    riskScore: validatedHybridRisk.riskScore,
+    riskScore:
+      validatedHybridRisk.riskScore,
 
-    confidence: aiResult.confidence,
+    confidence:
+      aiResult.confidence,
 
-    scamType: aiResult.scamType,
+    scamType:
+      aiResult.scamType,
 
-    severity: validatedHybridRisk.severity,
+    severity:
+      validatedHybridRisk.severity,
 
-    redFlags: aiResult.redFlags,
+    redFlags:
+      aiResult.redFlags,
 
-    attackPattern: aiResult.attackPattern,
+    attackPattern:
+      aiResult.attackPattern,
 
-    explanation: aiResult.explanation,
+    explanation:
+      aiResult.explanation,
 
-    recommendedActions: aiResult.recommendedActions,
+    recommendedActions:
+      aiResult.recommendedActions,
 
-    detectedSignals: messageRisk.detectedSignals,
+    detectedSignals:
+      messageRisk.detectedSignals,
 
     urlIntelligence,
 
     hybridRisk: {
       messageRisk:
-        validatedHybridRisk.components.messageRisk,
+        validatedHybridRisk
+          .components
+          .messageRisk,
 
       urlRisk:
-        validatedHybridRisk.components.urlRisk,
+        validatedHybridRisk
+          .components
+          .urlRisk,
     },
 
     riskEvidence,
 
-    riskDecision: validatedRiskDecision,
+    riskDecision:
+      validatedRiskDecision,
   };
 }
