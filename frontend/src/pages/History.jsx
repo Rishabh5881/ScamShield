@@ -2,31 +2,28 @@ import { useEffect, useMemo, useState } from "react";
 import {
   Search,
   SlidersHorizontal,
+  History as HistoryIcon,
+  ShieldCheck,
 } from "lucide-react";
 import { getHistory } from "../services/api";
 
 function mapRow(item) {
-  const result = item.result || {};
+  const result = item?.result || {};
 
   return {
-    id: item.id,
-    title:
-      item.originalInput ||
-      "Security analysis",
+    id: item?.id || "unknown",
+    title: item?.originalInput || "Security analysis",
     category:
-      result.scamType ||
-      result.classification ||
-      item.inputType ||
+      result?.scamType ||
+      result?.classification ||
+      item?.inputType ||
       "Analysis",
-    severity:
-      result.severity || "LOW",
-    score:
-      result.riskScore ?? 0,
-    date: item.createdAt
-      ? new Date(
-          item.createdAt
-        ).toLocaleDateString()
+    severity: result?.severity || "LOW",
+    score: result?.riskScore ?? 0,
+    date: item?.createdAt
+      ? new Date(item.createdAt).toLocaleDateString()
       : "—",
+    inputType: item?.inputType || "analysis",
   };
 }
 
@@ -45,32 +42,28 @@ export default function History() {
         setLoading(true);
         setError("");
 
-        const response =
-          await getHistory();
+        const response = await getHistory();
 
-        if (cancelled) {
-          return;
-        }
+        if (cancelled) return;
 
-        const historyData =
-          response?.data || [];
+        const payload = response?.data;
 
-        setRows(
-          Array.isArray(historyData)
-            ? historyData.map(mapRow)
-            : []
-        );
+        const historyData = Array.isArray(payload)
+          ? payload
+          : Array.isArray(payload?.data)
+            ? payload.data
+            : [];
+
+        setRows(historyData.map(mapRow));
       } catch (err) {
-        if (cancelled) {
-          return;
-        }
+        if (cancelled) return;
 
-        // IMPORTANT:
-        // Never show mock/fake history.
         setRows([]);
 
         setError(
-          err?.message ||
+          err?.response?.data?.error?.message ||
+            err?.response?.data?.message ||
+            err?.message ||
             "Unable to load analysis history."
         );
       } finally {
@@ -88,30 +81,20 @@ export default function History() {
   }, []);
 
   const filtered = useMemo(() => {
-    const normalizedQuery =
-      query.trim().toLowerCase();
+    const normalizedQuery = query.trim().toLowerCase();
 
     return rows.filter((item) => {
       const matchesFilter =
-        filter === "ALL" ||
-        item.severity === filter;
+        filter === "ALL" || item.severity === filter;
 
       const matchesSearch =
         !normalizedQuery ||
-        item.title
-          .toLowerCase()
-          .includes(normalizedQuery) ||
-        item.category
-          .toLowerCase()
-          .includes(normalizedQuery) ||
-        item.severity
-          .toLowerCase()
-          .includes(normalizedQuery);
+        item.title.toLowerCase().includes(normalizedQuery) ||
+        item.category.toLowerCase().includes(normalizedQuery) ||
+        item.severity.toLowerCase().includes(normalizedQuery) ||
+        item.inputType.toLowerCase().includes(normalizedQuery);
 
-      return (
-        matchesFilter &&
-        matchesSearch
-      );
+      return matchesFilter && matchesSearch;
     });
   }, [rows, query, filter]);
 
@@ -126,13 +109,38 @@ export default function History() {
           <h1>Analysis history.</h1>
 
           <p>
-            Review previous threat signals
-            and their risk classifications.
+            Review previous threat signals and their
+            risk classifications.
           </p>
+        </div>
+
+        <div className="page-header-status">
+          <span className="status-dot" />
+          {rows.length} analyses recorded
         </div>
       </div>
 
       <section className="panel history-panel">
+        <div className="history-panel-header">
+          <div className="history-title">
+            <div className="history-title-icon">
+              <HistoryIcon size={17} />
+            </div>
+
+            <div>
+              <strong>Analysis archive</strong>
+              <span>
+                Your completed security assessments
+              </span>
+            </div>
+          </div>
+
+          <div className="history-security-state">
+            <ShieldCheck size={14} />
+            Private history
+          </div>
+        </div>
+
         <div className="history-tools">
           <label className="search-box history-search">
             <Search size={14} />
@@ -161,13 +169,9 @@ export default function History() {
               <button
                 key={filterValue}
                 className={
-                  filter === filterValue
-                    ? "active"
-                    : ""
+                  filter === filterValue ? "active" : ""
                 }
-                onClick={() =>
-                  setFilter(filterValue)
-                }
+                onClick={() => setFilter(filterValue)}
                 type="button"
               >
                 {filterValue}
@@ -177,10 +181,7 @@ export default function History() {
         </div>
 
         {error && (
-          <div
-            className="error-box"
-            role="alert"
-          >
+          <div className="error-box" role="alert">
             {error}
           </div>
         )}
@@ -195,8 +196,18 @@ export default function History() {
           </div>
 
           {loading && (
-            <div className="empty-table">
-              Loading analysis history...
+            <div className="empty-table history-loading">
+              <div className="history-loading-icon">
+                <HistoryIcon size={18} />
+              </div>
+
+              <strong>
+                Loading analysis history...
+              </strong>
+
+              <small>
+                Retrieving your completed security assessments.
+              </small>
             </div>
           )}
 
@@ -206,17 +217,23 @@ export default function History() {
                 className="history-row"
                 key={item.id}
               >
-                <div>
-                  <strong>
-                    {item.title}
-                  </strong>
+                <div className="history-analysis-cell">
+                  <div className="history-row-icon">
+                    <HistoryIcon size={15} />
+                  </div>
 
-                  <small>
-                    {item.id}
-                  </small>
+                  <div>
+                    <strong title={item.title}>
+                      {item.title}
+                    </strong>
+
+                    <small title={item.id}>
+                      {item.id}
+                    </small>
+                  </div>
                 </div>
 
-                <span>
+                <span className="history-category">
                   {item.category}
                 </span>
 
@@ -226,7 +243,7 @@ export default function History() {
                   {item.severity}
                 </span>
 
-                <strong>
+                <strong className="history-score">
                   {item.score}/100
                 </strong>
 
@@ -236,15 +253,38 @@ export default function History() {
               </div>
             ))}
 
-          {!loading &&
-            !filtered.length && (
-              <div className="empty-table">
+          {!loading && !filtered.length && (
+            <div className="empty-table history-empty">
+              <div className="history-empty-icon">
+                <Search size={18} />
+              </div>
+
+              <strong>
                 {error
                   ? "No live history is available."
                   : "No analyses match your filters."}
-              </div>
-            )}
+              </strong>
+
+              <small>
+                {error
+                  ? "Try again after the analysis service is available."
+                  : "Try another search term or risk filter."}
+              </small>
+            </div>
+          )}
         </div>
+
+        {!loading && filtered.length > 0 && (
+          <div className="history-footer">
+            <span>
+              Showing {filtered.length} of {rows.length} analyses
+            </span>
+
+            <span>
+              Risk scores are generated from completed assessments
+            </span>
+          </div>
+        )}
       </section>
     </main>
   );

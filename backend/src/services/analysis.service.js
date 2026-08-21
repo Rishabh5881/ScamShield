@@ -38,3 +38,17 @@ export async function createAnalysis({
     };
   });
 }
+
+export async function getAnalysisHistory(userId) {
+  return prisma.analysis.findMany({
+    where: { userId },
+    include: {
+      result: true,
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+}
+
+

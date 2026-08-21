@@ -1,4 +1,7 @@
-import { createAnalysis } from "../services/analysis.service.js";
+import {
+  createAnalysis,
+  getAnalysisHistory,
+} from "../services/analysis.service.js";
 
 const AI_SERVICE_URL =
   process.env.AI_SERVICE_URL ||
@@ -288,6 +291,9 @@ async function analyzeScreenshotWithAI(
   }
 }
 
+/**
+ * Create analysis
+ */
 export async function createAnalysisController(
   req,
   res,
@@ -347,6 +353,26 @@ export async function createAnalysisController(
           message:
             "Message is required.",
         });
+      }
+
+      /*
+       * MESSAGE LENGTH VALIDATION
+       *
+       * Maximum allowed message length:
+       * 10,000 characters.
+       */
+      if (
+        originalInput.trim().length >
+        10000
+      ) {
+        const error =
+          new Error(
+            "Message is too long"
+          );
+
+        error.status = 400;
+
+        throw error;
       }
 
       analysisResult =
@@ -476,11 +502,24 @@ export async function createAnalysisController(
 
     /*
      * --------------------------------------
+     * MESSAGE TOO LONG
+     * --------------------------------------
+     */
+    if (
+      error?.message ===
+      "Message is too long"
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Message is too long. Maximum length is 10000 characters.",
+      });
+    }
+
+    /*
+     * --------------------------------------
      * AI QUOTA / RATE LIMIT
      * --------------------------------------
-     *
-     * Preserve 429 instead of converting it
-     * into a generic 500.
      */
     if (
       error?.status === 429 ||
@@ -561,6 +600,40 @@ export async function createAnalysisController(
           "Unable to complete analysis.",
         retryable: true,
       },
+    });
+  }
+}
+
+/**
+ * Get authenticated user's analysis history.
+ *
+ * This is read-only and does not modify the existing
+ * message / URL / screenshot analysis flow.
+ */
+export async function getAnalysisHistoryController(
+  req,
+  res
+) {
+  try {
+    const history =
+      await getAnalysisHistory(
+        req.user.id
+      );
+
+    return res.status(200).json({
+      success: true,
+      data: history,
+    });
+  } catch (error) {
+    console.error(
+      "GET ANALYSIS HISTORY ERROR:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message:
+        "Unable to fetch analysis history.",
     });
   }
 }

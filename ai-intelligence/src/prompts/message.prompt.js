@@ -27,6 +27,8 @@ Rules:
 - Recommended actions must be safe and defensive.
 - Never ask the user to click suspicious links or provide credentials.
 - Keep explanation concise and evidence-based.
+- If classification is SAFE, scamType MUST be "Other/Suspicious".
+- Never return "None", "N/A", "Unknown", or any value outside the allowed scamType list.
 `;
 
 export function buildMessageUserPrompt(text) {

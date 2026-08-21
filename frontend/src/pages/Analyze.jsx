@@ -779,6 +779,10 @@ export default function Analyze() {
                   Analyze again
                   <RotateCcw size={13} />
                 </button>
+
+                <p className="ai-disclaimer">
+                  AI-assisted assessment — not an absolute guarantee.
+                </p>
               </div>
             </div>
           )}
