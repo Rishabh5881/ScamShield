@@ -8,6 +8,7 @@ import Topbar from "./components/Topbar";
 import Dashboard from "./pages/Dashboard";
 import Analyze from "./pages/Analyze";
 import History from "./pages/History";
+import HistoryDetails from "./pages/HistoryDetails";
 import SecurityInsights from "./pages/SecurityInsights";
 import Profile from "./pages/Profile";
 import Home from "./pages/Home";
@@ -45,6 +46,11 @@ function AppShell() {
           <Route
             path="/history"
             element={<History />}
+          />
+
+          <Route
+            path="/history/:id"
+            element={<HistoryDetails />}
           />
 
           <Route

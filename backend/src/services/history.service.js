@@ -13,3 +13,15 @@ export async function getAnalysisHistory(userId) {
     },
   });
 }
+
+export async function getAnalysisDetails(userId, analysisId) {
+  return prisma.analysis.findFirst({
+    where: {
+      id: analysisId,
+      userId,
+    },
+    include: {
+      result: true,
+    },
+  });
+}

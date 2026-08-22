@@ -459,3 +459,15 @@ export async function getAnalytics() {
 }
 
 export default api;
+export async function getHistoryDetails(id) {
+  try {
+    const response =
+      await api.get(
+        `/history/${id}`
+      );
+
+    return response.data;
+  } catch (error) {
+    throw createApiError(error);
+  }
+}
