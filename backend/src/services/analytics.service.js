@@ -10,15 +10,20 @@ export async function getDashboardAnalytics(userId) {
     scamCategories,
     riskDistribution,
     recentActivity,
+    detectionRecords,
   ] = await Promise.all([
     prisma.analysis.count({
-      where: { userId },
+      where: {
+        userId,
+        status: "COMPLETED",
+      },
     }),
 
     prisma.analysisResult.count({
       where: {
         analysis: {
           userId,
+          status: "COMPLETED",
         },
         classification: "SCAM",
       },
@@ -28,6 +33,7 @@ export async function getDashboardAnalytics(userId) {
       where: {
         analysis: {
           userId,
+          status: "COMPLETED",
         },
         riskScore: {
           gte: 61,
@@ -39,6 +45,7 @@ export async function getDashboardAnalytics(userId) {
       where: {
         analysis: {
           userId,
+          status: "COMPLETED",
         },
         riskScore: {
           gte: 31,
@@ -51,6 +58,7 @@ export async function getDashboardAnalytics(userId) {
       where: {
         analysis: {
           userId,
+          status: "COMPLETED",
         },
         riskScore: {
           lte: 30,
@@ -63,6 +71,7 @@ export async function getDashboardAnalytics(userId) {
       where: {
         analysis: {
           userId,
+          status: "COMPLETED",
         },
       },
       _count: {
@@ -80,6 +89,7 @@ export async function getDashboardAnalytics(userId) {
       where: {
         analysis: {
           userId,
+          status: "COMPLETED",
         },
       },
       _count: {
@@ -90,6 +100,7 @@ export async function getDashboardAnalytics(userId) {
     prisma.analysis.findMany({
       where: {
         userId,
+        status: "COMPLETED",
       },
       include: {
         result: true,
@@ -99,7 +110,50 @@ export async function getDashboardAnalytics(userId) {
       },
       take: 10,
     }),
+
+    prisma.analysis.findMany({
+      where: {
+        userId,
+        status: "COMPLETED",
+      },
+      select: {
+        createdAt: true,
+        result: {
+          select: {
+            classification: true,
+            riskScore: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "asc",
+      },
+    }),
   ]);
+
+  const trends = {};
+
+  for (const analysis of detectionRecords) {
+    const date = analysis.createdAt
+      .toISOString()
+      .slice(0, 10);
+
+    if (!trends[date]) {
+      trends[date] = {
+        date,
+        total: 0,
+        scams: 0,
+      };
+    }
+
+    trends[date].total += 1;
+
+    if (
+      analysis.result?.classification === "SCAM"
+    ) {
+      trends[date].scams += 1;
+    }
+  }
 
   return {
     summary: {
@@ -119,6 +173,8 @@ export async function getDashboardAnalytics(userId) {
       severity: item.severity,
       count: item._count.severity,
     })),
+
+    detectionTrends: Object.values(trends),
 
     recentActivity,
   };

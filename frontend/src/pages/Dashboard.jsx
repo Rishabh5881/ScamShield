@@ -13,6 +13,8 @@ import StatCard from "../components/StatCard";
 import RecentAnalyses from "../components/RecentAnalyses";
 import RiskDonut from "../components/RiskDonut";
 import CategoryChart from "../components/CategoryChart";
+import RiskDistribution from "../components/RiskDistribution";
+import DetectionTrends from "../components/DetectionTrends";
 import { useAuth } from "../context/AuthContext";
 
 function formatRecentAnalyses(items = []) {
@@ -109,14 +111,14 @@ export default function Dashboard() {
       tone: "amber",
     },
     {
-      label: "Protection Rate",
-      value: summary.totalAnalyses
-        ? `${Math.round(
-            ((summary.safe || 0) /
-              summary.totalAnalyses) *
-              100
-          )}%`
-        : "0%",
+      label: "Suspicious Cases",
+      value: summary.suspicious ?? 0,
+      change: "Live",
+      tone: "amber",
+    },
+    {
+      label: "Safe Cases",
+      value: summary.safe ?? 0,
       change: "Live",
       tone: "green",
     },
@@ -292,91 +294,141 @@ export default function Dashboard() {
       </section>
 
       <section className="content-grid bottom-grid">
-        <article className="panel">
-          <div className="panel-head">
-            <div>
-              <span className="eyebrow">
-                Threat distribution
-              </span>
+  <article className="panel">
+    <div className="panel-head">
+      <div>
+        <span className="eyebrow">
+          Threat distribution
+        </span>
 
-              <h3>Scam categories</h3>
-            </div>
-          </div>
+        <h3>Scam categories</h3>
+      </div>
+    </div>
 
-          {loading ? (
-            <div className="empty-table">
-              Loading threat categories...
-            </div>
-          ) : (
-            <CategoryChart
-              categories={categories}
-            />
-          )}
-        </article>
+    {loading ? (
+      <div className="empty-table">
+        Loading threat categories...
+      </div>
+    ) : (
+      <CategoryChart
+        categories={categories}
+      />
+    )}
+  </article>
 
-        <article className="panel">
-          <div className="panel-head">
-            <div>
-              <span className="eyebrow">
-                Quick actions
-              </span>
+  <article className="panel">
+    <div className="panel-head">
+      <div>
+        <span className="eyebrow">
+          Risk distribution
+        </span>
 
-              <h3>Analyze something suspicious</h3>
-            </div>
-          </div>
+        <h3>Severity levels</h3>
+      </div>
+    </div>
 
-          <div className="quick-actions">
-            <Link
-              className="quick-card"
-              to="/analyze"
-            >
-              <span className="quick-icon">
-                <MessageSquare size={15} />
-              </span>
+    {loading ? (
+      <div className="empty-table">
+        Loading risk distribution...
+      </div>
+    ) : (
+      <RiskDistribution
+        distribution={
+          analytics?.severityDistribution || []
+        }
+      />
+    )}
+  </article>
 
-              <div>
-                <strong>Message</strong>
-                <span>SMS, email, WhatsApp</span>
-              </div>
+  <article className="panel">
+    <div className="panel-head">
+      <div>
+        <span className="eyebrow">
+          Detection trends
+        </span>
 
-              <ArrowRight size={12} />
-            </Link>
+        <h3>Recent activity trend</h3>
+      </div>
+    </div>
 
-            <Link
-              className="quick-card"
-              to="/analyze"
-            >
-              <span className="quick-icon">
-                <Link2 size={15} />
-              </span>
+    {loading ? (
+      <div className="empty-table">
+        Loading detection trends...
+      </div>
+    ) : (
+      <DetectionTrends
+        trends={
+          analytics?.detectionTrends || []
+        }
+      />
+    )}
+  </article>
 
-              <div>
-                <strong>URL</strong>
-                <span>Check a suspicious link</span>
-              </div>
+  <article className="panel">
+    <div className="panel-head">
+      <div>
+        <span className="eyebrow">
+          Quick actions
+        </span>
 
-              <ArrowRight size={12} />
-            </Link>
+        <h3>Analyze something suspicious</h3>
+      </div>
+    </div>
 
-            <Link
-              className="quick-card"
-              to="/analyze"
-            >
-              <span className="quick-icon">
-                <Image size={15} />
-              </span>
+    <div className="quick-actions">
+      <Link
+        className="quick-card"
+        to="/analyze"
+      >
+        <span className="quick-icon">
+          <MessageSquare size={15} />
+        </span>
 
-              <div>
-                <strong>Screenshot</strong>
-                <span>Analyze an image</span>
-              </div>
+        <div>
+          <strong>Message</strong>
+          <span>SMS, email, WhatsApp</span>
+        </div>
 
-              <ArrowRight size={12} />
-            </Link>
-          </div>
-        </article>
-      </section>
+        <ArrowRight size={12} />
+      </Link>
+
+      <Link
+        className="quick-card"
+        to="/analyze"
+      >
+        <span className="quick-icon">
+          <Link2 size={15} />
+        </span>
+
+        <div>
+          <strong>URL</strong>
+          <span>Check a suspicious link</span>
+        </div>
+
+        <ArrowRight size={12} />
+      </Link>
+
+      <Link
+        className="quick-card"
+        to="/analyze"
+      >
+        <span className="quick-icon">
+          <Image size={15} />
+        </span>
+
+        <div>
+          <strong>Screenshot</strong>
+          <span>Analyze an image</span>
+        </div>
+
+        <ArrowRight size={12} />
+      </Link>
+    </div>
+  </article>
+</section>
     </main>
   );
 }
+
+
 
