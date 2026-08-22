@@ -510,6 +510,17 @@ export async function createAnalysisController(
         });
       }
 
+    if (req.file.size === 0) {
+      return res.status(400).json({
+      success: false,
+      error: {
+      code: "SCREENSHOT_EMPTY",
+      message: "Screenshot file cannot be empty.",
+      retryable: false,
+    },
+  });
+}
+
       if (!req.file.buffer) {
         return res.status(400).json({
           success: false,

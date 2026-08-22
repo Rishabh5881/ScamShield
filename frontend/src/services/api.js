@@ -322,17 +322,13 @@ export async function analyzeMessage(
   // SCREENSHOT
   // ----------------------------------------
 
-  if (
-    type === "screenshot"
-  ) {
+  if (type === "screenshot") {
     if (!payload?.file) {
-      const error =
-        new Error(
-          "Please upload a screenshot to analyze."
-        );
+      const error = new Error(
+        "Please upload a screenshot to analyze."
+      );
 
-      error.code =
-        "VALIDATION";
+      error.code = "VALIDATION";
 
       throw error;
     }
@@ -341,26 +337,31 @@ export async function analyzeMessage(
       new FormData();
 
     formData.append(
-      "inputType",
-      "screenshot"
+      "file",
+      payload.file,
+      payload.file.name
     );
 
     formData.append(
-      "file",
-      payload.file
+      "inputType",
+      "screenshot"
     );
 
     try {
       const response =
         await api.post(
-          "/api/analysis",
+          "/analysis",
           formData,
           {
+            timeout: 120000,
+
+            // IMPORTANT:
+            // Do not force application/json
+            // for multipart/form-data.
             headers: {
               "Content-Type":
                 "multipart/form-data",
             },
-            timeout: 120000,
           }
         );
 
@@ -458,5 +459,3 @@ export async function getAnalytics() {
 }
 
 export default api;
-
-
