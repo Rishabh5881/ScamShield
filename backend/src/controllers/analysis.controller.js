@@ -27,17 +27,12 @@ function createAIServiceError(
 /**
  * Analyze a text message through the AI Intelligence Service.
  */
-async function analyzeMessageWithAI(
-  originalInput
-) {
+async function analyzeMessageWithAI(originalInput) {
   const url = `${AI_SERVICE_URL}/analyze`;
 
-  console.log(
-    "Sending message to AI:",
-    {
-      url,
-    }
-  );
+  console.log("Sending message to AI:", {
+    url,
+  });
 
   try {
     const response = await fetch(url, {
@@ -104,20 +99,16 @@ async function analyzeMessageWithAI(
 
     if (
       error?.status ||
-      error?.code ===
-        "AI_QUOTA_EXCEEDED"
+      error?.code === "AI_QUOTA_EXCEEDED"
     ) {
       throw error;
     }
 
-    const networkError =
-      createAIServiceError(
-        "Could not connect to AI service.",
-        503,
-        "AI_SERVICE_UNAVAILABLE"
-      );
-
-    throw networkError;
+    throw createAIServiceError(
+      "Could not connect to AI service.",
+      503,
+      "AI_SERVICE_UNAVAILABLE"
+    );
   }
 }
 
@@ -130,9 +121,7 @@ async function analyzeMessageWithAI(
  * The only network request here is to our own
  * local AI Intelligence Service.
  */
-async function analyzeUrlWithAI(
-  originalInput
-) {
+async function analyzeUrlWithAI(originalInput) {
   const url =
     `${AI_SERVICE_URL}/analyze-url`;
 
@@ -223,9 +212,7 @@ async function analyzeUrlWithAI(
  * as multipart/form-data using the field name expected by
  * the AI service: "image".
  */
-async function analyzeScreenshotWithAI(
-  file
-) {
+async function analyzeScreenshotWithAI(file) {
   if (!file?.buffer) {
     throw createAIServiceError(
       "Screenshot file is required.",
@@ -241,17 +228,14 @@ async function analyzeScreenshotWithAI(
     "Sending screenshot to AI:",
     {
       url,
-      fileName:
-        file.originalname,
-      mimeType:
-        file.mimetype,
+      fileName: file.originalname,
+      mimeType: file.mimetype,
       size: file.size,
     }
   );
 
   try {
-    const formData =
-      new FormData();
+    const formData = new FormData();
 
     const blob = new Blob(
       [file.buffer],
@@ -293,10 +277,8 @@ async function analyzeScreenshotWithAI(
     console.log(
       "AI SCREENSHOT RESPONSE:",
       {
-        status:
-          response.status,
-        ok:
-          response.ok,
+        status: response.status,
+        ok: response.ok,
         hasResult:
           Boolean(
             payload?.result
@@ -356,14 +338,11 @@ async function analyzeScreenshotWithAI(
       throw error;
     }
 
-    const networkError =
-      createAIServiceError(
-        "Could not connect to AI screenshot service.",
-        503,
-        "AI_SERVICE_UNAVAILABLE"
-      );
-
-    throw networkError;
+    throw createAIServiceError(
+      "Could not connect to AI screenshot service.",
+      503,
+      "AI_SERVICE_UNAVAILABLE"
+    );
   }
 }
 
@@ -414,7 +393,9 @@ export async function createAnalysisController(
     let analysisResult;
 
     /*
+     * --------------------------------------
      * MESSAGE ANALYSIS
+     * --------------------------------------
      */
     if (
       inputType === "message"
@@ -452,13 +433,15 @@ export async function createAnalysisController(
     }
 
     /*
+     * --------------------------------------
      * SAFE STATIC URL ANALYSIS
+     * --------------------------------------
      *
      * IMPORTANT:
      * The supplied URL is NEVER visited.
      *
-     * It is sent only to the local AI service
-     * as a string for static parsing and risk analysis.
+     * It is sent only to the local AI
+     * Intelligence Service for static analysis.
      */
     else if (
       inputType === "url"
@@ -489,18 +472,91 @@ export async function createAnalysisController(
         throw error;
       }
 
-      analysisResult =
+      /*
+       * First get the raw URL intelligence result.
+       */
+      const urlResult =
         await analyzeUrlWithAI(
           originalInput.trim()
         );
+
+      /*
+       * Convert URL intelligence output
+       * into the common AnalysisResult shape
+       * required by Prisma.
+       */
+      const urlRiskScore =
+        urlResult.overallRiskScore ?? 0;
+
+      let classification =
+        "SAFE";
+
+      if (urlRiskScore >= 61) {
+        classification =
+          "SCAM";
+      } else if (
+        urlRiskScore >= 31
+      ) {
+        classification =
+          "SUSPICIOUS";
+      }
+
+      analysisResult = {
+        classification,
+
+        riskScore:
+          urlRiskScore,
+
+        confidence: 1,
+
+        scamType:
+          urlResult.detectedSignals
+            ?.length > 0
+            ? "Suspicious URL"
+            : "None",
+
+        severity:
+          urlResult.overallSeverity ??
+          "LOW",
+
+        explanation:
+          urlResult.detectedSignals
+            ?.length > 0
+            ? `Static URL analysis detected: ${urlResult.detectedSignals.join(", ")}.`
+            : "No significant suspicious URL signals were detected.",
+
+        redFlags:
+          urlResult.detectedSignals ??
+          [],
+
+        attackPattern: [],
+
+        recommendedActions:
+          urlRiskScore >= 61
+            ? [
+                "Do not visit the URL.",
+                "Do not enter credentials or payment information.",
+                "Verify the sender through an independent channel.",
+              ]
+            : urlRiskScore >= 31
+              ? [
+                  "Treat this URL with caution.",
+                  "Do not enter sensitive information.",
+                  "Verify the URL through an independent source.",
+                ]
+              : [
+                  "No significant URL risk detected.",
+                ],
+      };
     }
 
     /*
+     * --------------------------------------
      * SCREENSHOT ANALYSIS
+     * --------------------------------------
      */
     else if (
-      inputType ===
-      "screenshot"
+      inputType === "screenshot"
     ) {
       if (!req.file) {
         return res.status(400).json({
@@ -510,16 +566,18 @@ export async function createAnalysisController(
         });
       }
 
-    if (req.file.size === 0) {
-      return res.status(400).json({
-      success: false,
-      error: {
-      code: "SCREENSHOT_EMPTY",
-      message: "Screenshot file cannot be empty.",
-      retryable: false,
-    },
-  });
-}
+      if (req.file.size === 0) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code:
+              "SCREENSHOT_EMPTY",
+            message:
+              "Screenshot file cannot be empty.",
+            retryable: false,
+          },
+        });
+      }
 
       if (!req.file.buffer) {
         return res.status(400).json({
@@ -536,7 +594,9 @@ export async function createAnalysisController(
     }
 
     /*
+     * --------------------------------------
      * UNSUPPORTED INPUT TYPE
+     * --------------------------------------
      */
     else {
       return res.status(400).json({
@@ -547,8 +607,40 @@ export async function createAnalysisController(
     }
 
     /*
-     * Persist only the result generated by
-     * the AI Intelligence Service.
+     * --------------------------------------
+     * VALIDATE RESULT BEFORE DATABASE
+     * --------------------------------------
+     *
+     * This prevents Prisma from receiving
+     * undefined classification/riskScore/etc.
+     */
+    if (
+      !analysisResult ||
+      typeof analysisResult !==
+        "object"
+    ) {
+      throw createAIServiceError(
+        "Analysis result is invalid.",
+        502,
+        "AI_INVALID_RESPONSE"
+      );
+    }
+
+    if (
+      typeof analysisResult.classification !==
+      "string"
+    ) {
+      throw createAIServiceError(
+        "Analysis result is missing classification.",
+        502,
+        "AI_INVALID_RESPONSE"
+      );
+    }
+
+    /*
+     * --------------------------------------
+     * PERSIST ANALYSIS
+     * --------------------------------------
      */
     const analysis =
       await createAnalysis({
@@ -636,7 +728,8 @@ export async function createAnalysisController(
      */
     if (
       error?.message ===
-      "Invalid URL"
+        "Invalid URL" ||
+      error?.code === "INVALID_URL"
     ) {
       return res.status(400).json({
         success: false,
@@ -741,7 +834,7 @@ export async function createAnalysisController(
 /**
  * Get authenticated user's analysis history.
  *
- * This is read-only and does not modify the existing
+ * This is read-only and does not modify the
  * message / URL / screenshot analysis flow.
  */
 export async function getAnalysisHistoryController(
