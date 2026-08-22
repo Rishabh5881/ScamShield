@@ -3,11 +3,27 @@ export function normalizeUrl(input) {
     return null;
   }
 
-  try {
-    const url = new URL(input.trim());
+  const value = input.trim();
 
+  if (!value || value.length > 2048) {
+    return null;
+  }
+
+  try {
+    const url = new URL(value);
+
+    // Only web URLs are allowed.
+    if (
+      url.protocol !== "http:" &&
+      url.protocol !== "https:"
+    ) {
+      return null;
+    }
+
+    // Username/password in a URL are suspicious
+    // but must remain static data only.
     return {
-      original: input,
+      original: value,
       href: url.href,
       protocol: url.protocol.replace(":", ""),
       hostname: url.hostname.toLowerCase(),

@@ -353,7 +353,7 @@ export async function analyzeMessage(
     try {
       const response =
         await api.post(
-          "/analysis",
+          "/api/analysis",
           formData,
           {
             headers: {
@@ -458,3 +458,5 @@ export async function getAnalytics() {
 }
 
 export default api;
+
+

@@ -43,8 +43,7 @@ async function analyzeMessageWithAI(
     const response = await fetch(url, {
       method: "POST",
       headers: {
-        "Content-Type":
-          "application/json",
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         message: originalInput,
@@ -103,14 +102,6 @@ async function analyzeMessageWithAI(
       }
     );
 
-    /*
-     * Preserve AI service errors.
-     *
-     * Especially important for:
-     * 429 AI quota
-     * 503 AI unavailable
-     * 502 invalid AI response
-     */
     if (
       error?.status ||
       error?.code ===
@@ -119,10 +110,6 @@ async function analyzeMessageWithAI(
       throw error;
     }
 
-    /*
-     * Network-level failure:
-     * AI service could not be reached.
-     */
     const networkError =
       createAIServiceError(
         "Could not connect to AI service.",
@@ -131,6 +118,101 @@ async function analyzeMessageWithAI(
       );
 
     throw networkError;
+  }
+}
+
+/**
+ * Analyze a URL through the SAFE STATIC URL pipeline.
+ *
+ * IMPORTANT:
+ * The user supplied URL is NEVER requested.
+ *
+ * The only network request here is to our own
+ * local AI Intelligence Service.
+ */
+async function analyzeUrlWithAI(
+  originalInput
+) {
+  const url =
+    `${AI_SERVICE_URL}/analyze-url`;
+
+  console.log(
+    "Sending URL for STATIC analysis:",
+    {
+      serviceUrl: url,
+    }
+  );
+
+  try {
+    const response = await fetch(
+      url,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type":
+            "application/json",
+        },
+        body: JSON.stringify({
+          url: originalInput,
+        }),
+      }
+    );
+
+    let payload = null;
+
+    try {
+      payload =
+        await response.json();
+    } catch {
+      throw createAIServiceError(
+        "AI URL service returned an invalid response.",
+        502,
+        "AI_INVALID_RESPONSE"
+      );
+    }
+
+    if (!response.ok) {
+      throw createAIServiceError(
+        payload?.error?.message ||
+          "AI URL analysis failed.",
+        response.status,
+        payload?.error?.code ||
+          "AI_SERVICE_ERROR"
+      );
+    }
+
+    if (!payload?.result) {
+      throw createAIServiceError(
+        "AI URL service returned an empty result.",
+        502,
+        "AI_INVALID_RESPONSE"
+      );
+    }
+
+    return payload.result;
+  } catch (error) {
+    console.error(
+      "BACKEND → AI URL STATIC ANALYSIS ERROR:",
+      {
+        name: error?.name,
+        code: error?.code,
+        status: error?.status,
+        message: error?.message,
+      }
+    );
+
+    if (
+      error?.status ||
+      error?.code
+    ) {
+      throw error;
+    }
+
+    throw createAIServiceError(
+      "Could not connect to AI URL service.",
+      503,
+      "AI_SERVICE_UNAVAILABLE"
+    );
   }
 }
 
@@ -266,9 +348,6 @@ async function analyzeScreenshotWithAI(
       }
     );
 
-    /*
-     * Preserve AI service errors.
-     */
     if (
       error?.status ||
       error?.code ===
@@ -277,9 +356,6 @@ async function analyzeScreenshotWithAI(
       throw error;
     }
 
-    /*
-     * Network-level failure.
-     */
     const networkError =
       createAIServiceError(
         "Could not connect to AI screenshot service.",
@@ -355,12 +431,6 @@ export async function createAnalysisController(
         });
       }
 
-      /*
-       * MESSAGE LENGTH VALIDATION
-       *
-       * Maximum allowed message length:
-       * 10,000 characters.
-       */
       if (
         originalInput.trim().length >
         10000
@@ -382,11 +452,13 @@ export async function createAnalysisController(
     }
 
     /*
-     * URL ANALYSIS
+     * SAFE STATIC URL ANALYSIS
      *
-     * URL analysis uses the existing AI message
-     * pipeline. The AI service performs URL intelligence
-     * and hybrid risk analysis.
+     * IMPORTANT:
+     * The supplied URL is NEVER visited.
+     *
+     * It is sent only to the local AI service
+     * as a string for static parsing and risk analysis.
      */
     else if (
       inputType === "url"
@@ -403,8 +475,22 @@ export async function createAnalysisController(
         });
       }
 
+      if (
+        originalInput.trim().length >
+        2048
+      ) {
+        const error =
+          new Error(
+            "URL is too long"
+          );
+
+        error.status = 400;
+
+        throw error;
+      }
+
       analysisResult =
-        await analyzeMessageWithAI(
+        await analyzeUrlWithAI(
           originalInput.trim()
         );
     }
@@ -513,6 +599,43 @@ export async function createAnalysisController(
         success: false,
         message:
           "Message is too long. Maximum length is 10000 characters.",
+      });
+    }
+
+    /*
+     * --------------------------------------
+     * URL TOO LONG
+     * --------------------------------------
+     */
+    if (
+      error?.message ===
+      "URL is too long"
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "URL is too long. Maximum length is 2048 characters.",
+      });
+    }
+
+    /*
+     * --------------------------------------
+     * INVALID URL
+     * --------------------------------------
+     */
+    if (
+      error?.message ===
+      "Invalid URL"
+    ) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code:
+            "INVALID_URL",
+          message:
+            "The supplied URL is invalid.",
+          retryable: false,
+        },
       });
     }
 

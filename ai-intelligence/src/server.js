@@ -4,6 +4,7 @@ import multer from "multer";
 
 import { analyzeMessage } from "./services/message-analysis.service.js";
 import { analyzeScreenshot } from "./screenshot/services/screenshot-analysis.service.js";
+import { analyzeSingleUrl } from "./intelligence/url/url-analysis.service.js";
 
 const app = express();
 const PORT = process.env.PORT || 6100;
@@ -29,12 +30,29 @@ app.get("/health", (req, res) => {
 });
 
 // ==========================================
-// MESSAGE / URL ANALYSIS
+// MESSAGE ANALYSIS
 // ==========================================
 
 app.post("/analyze", async (req, res, next) => {
   try {
     const result = await analyzeMessage(req.body?.message);
+
+    return res.status(200).json({
+      success: true,
+      result,
+    });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+// ==========================================
+// SAFE STATIC URL ANALYSIS
+// ==========================================
+
+app.post("/analyze-url", async (req, res, next) => {
+  try {
+    const result = analyzeSingleUrl(req.body?.url);
 
     return res.status(200).json({
       success: true,
@@ -92,9 +110,9 @@ app.use((error, req, res, next) => {
     message: error?.message,
   });
 
-  // ------------------------------------------
+  // ==========================================
   // AI PROVIDER QUOTA / RATE LIMIT
-  // ------------------------------------------
+  // ==========================================
 
   if (
     error?.status === 429 ||
@@ -111,9 +129,9 @@ app.use((error, req, res, next) => {
     });
   }
 
-  // ------------------------------------------
+  // ==========================================
   // AUTH / CONFIG ERROR
-  // ------------------------------------------
+  // ==========================================
 
   if (
     error?.status === 401 ||
@@ -130,9 +148,9 @@ app.use((error, req, res, next) => {
     });
   }
 
-  // ------------------------------------------
+  // ==========================================
   // INVALID / BAD AI RESPONSE
-  // ------------------------------------------
+  // ==========================================
 
   if (
     error?.code === "AI_INVALID_RESPONSE" ||
@@ -149,9 +167,9 @@ app.use((error, req, res, next) => {
     });
   }
 
-  // ------------------------------------------
+  // ==========================================
   // PROVIDER TEMPORARILY UNAVAILABLE
-  // ------------------------------------------
+  // ==========================================
 
   if (
     error?.status === 500 ||
@@ -171,8 +189,27 @@ app.use((error, req, res, next) => {
   }
 
   // ------------------------------------------
+// INVALID URL
+// ------------------------------------------
+
+if (
+  error?.code === "INVALID_URL" ||
+  error?.status === 400
+) {
+  return res.status(400).json({
+    success: false,
+    error: {
+      code: "INVALID_URL",
+      message:
+        error?.message || "Invalid URL.",
+      retryable: false,
+    },
+  });
+}
+
+  // ==========================================
   // SAFE DEFAULT
-  // ------------------------------------------
+  // ==========================================
 
   return res.status(500).json({
     success: false,
