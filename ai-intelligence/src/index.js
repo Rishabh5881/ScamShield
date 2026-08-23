@@ -9,9 +9,10 @@ try {
   const result = await analyzeMessage(testMessage);
 
   console.log("\n=== ScamShield AI Result ===\n");
-  console.log(JSON.stringify(result, null, 2));
+  console.log("AI test completed:", { success: Boolean(result) });
 } catch (error) {
   console.error("\n=== ScamShield AI Error ===\n");
-  console.error(error.message);
+  console.error("AI test error:", { name: error?.name, code: error?.code, status: error?.status });
   process.exitCode = 1;
 }
+

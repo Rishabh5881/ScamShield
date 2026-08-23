@@ -423,24 +423,7 @@ export async function generateAIResponse({
 }) {
   let lastError = null;
 
-  console.log(
-    "NARAROUTER REQUEST:",
-    {
-      model:
-        aiConfig.model,
-
-      timeout:
-        aiConfig.timeout,
-
-      hasApiKey:
-        Boolean(
-          aiConfig.apiKey
-        ),
-
-      baseUrl:
-        aiConfig.baseUrl,
-    }
-  );
+  console.log("NARAROUTER REQUEST:", { model: aiConfig.model, timeout: aiConfig.timeout });
 
   for (
     let attempt = 1;
@@ -467,10 +450,7 @@ export async function generateAIResponse({
       lastError =
         error;
 
-      console.error(
-        `NARAROUTER ATTEMPT ${attempt} FAILED:`,
-        getErrorDetails(error)
-      );
+      console.error(`NARAROUTER ATTEMPT ${attempt} FAILED:`, { code: error?.code, status: getStatusCode(error) });
 
       const status =
         getStatusCode(error);
@@ -523,14 +503,12 @@ export async function generateAIResponse({
     }
   }
 
-  console.error(
-    "NARAROUTER FINAL ERROR:",
-    getErrorDetails(
-      lastError
-    )
-  );
+  console.error("NARAROUTER FINAL ERROR:", { code: lastError?.code, status: getStatusCode(lastError) });
 
   throw createProviderError(
     lastError
   );
 }
+
+
+

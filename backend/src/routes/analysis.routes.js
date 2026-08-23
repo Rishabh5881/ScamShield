@@ -1,5 +1,6 @@
 import express from "express";
 import multer from "multer";
+import { fileTypeFromBuffer } from "file-type";
 
 import { authenticate } from "../middleware/auth.middleware.js";
 import {
@@ -16,11 +17,20 @@ const ALLOWED_IMAGE_TYPES = [
   "image/webp",
 ];
 
+const ALLOWED_FILE_EXTENSIONS = [
+  "png",
+  "jpg",
+  "jpeg",
+  "webp",
+];
+
 const upload = multer({
   storage: multer.memoryStorage(),
+
   limits: {
     fileSize: 10 * 1024 * 1024,
   },
+
   fileFilter: (req, file, cb) => {
     if (!ALLOWED_IMAGE_TYPES.includes(file.mimetype)) {
       const error = new Error(
@@ -37,10 +47,70 @@ const upload = multer({
   },
 });
 
+async function validateScreenshotFile(req, res, next) {
+  try {
+    const file = req.file;
+
+    if (!file?.buffer) {
+      return next();
+    }
+
+    const detectedType = await fileTypeFromBuffer(file.buffer);
+
+    if (!detectedType) {
+      const error = new Error(
+        "Unable to verify screenshot file type."
+      );
+
+      error.statusCode = 400;
+      error.code = "INVALID_FILE_SIGNATURE";
+
+      return next(error);
+    }
+
+    const detectedMime = detectedType.mime;
+    const detectedExtension = detectedType.ext;
+
+    const normalizedMime =
+      file.mimetype === "image/jpg"
+        ? "image/jpeg"
+        : file.mimetype;
+
+    const normalizedDetectedMime =
+      detectedMime === "image/jpg"
+        ? "image/jpeg"
+        : detectedMime;
+
+    if (
+      !ALLOWED_IMAGE_TYPES.includes(file.mimetype) ||
+      !ALLOWED_IMAGE_TYPES.includes(normalizedDetectedMime) ||
+      normalizedMime !== normalizedDetectedMime ||
+      !ALLOWED_FILE_EXTENSIONS.includes(detectedExtension)
+    ) {
+      const error = new Error(
+        "Screenshot file content does not match the declared file type."
+      );
+
+      error.statusCode = 400;
+      error.code = "INVALID_FILE_SIGNATURE";
+
+      return next(error);
+    }
+
+    req.file.detectedMimeType = detectedMime;
+    req.file.detectedExtension = detectedExtension;
+
+    next();
+  } catch (error) {
+    next(error);
+  }
+}
+
 router.post(
   "/",
   authenticate,
   upload.single("file"),
+  validateScreenshotFile,
   createAnalysisController
 );
 

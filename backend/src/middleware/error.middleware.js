@@ -1,5 +1,5 @@
 export function errorMiddleware(error, req, res, next) {
-  console.error(error);
+  console.error("Request error:", { code: error?.code, status: error?.statusCode, name: error?.name });
 
   if (error?.code === "LIMIT_FILE_SIZE") {
     return res.status(400).json({
@@ -12,12 +12,23 @@ export function errorMiddleware(error, req, res, next) {
   if (error?.code === "UNSUPPORTED_FILE_TYPE") {
     return res.status(400).json({
       success: false,
-      message: "Unsupported screenshot format. Use PNG, JPEG, or WEBP.",
+      message:
+        "Unsupported screenshot format. Use PNG, JPEG, or WEBP.",
       code: "UNSUPPORTED_FILE_TYPE",
     });
   }
 
-  if (error.name === "ZodError") {
+  if (error?.code === "INVALID_FILE_SIGNATURE") {
+    return res.status(400).json({
+      success: false,
+      message:
+        error.message ||
+        "Uploaded file content does not match its declared type.",
+      code: "INVALID_FILE_SIGNATURE",
+    });
+  }
+
+  if (error?.name === "ZodError") {
     return res.status(400).json({
       success: false,
       message: "Validation failed",

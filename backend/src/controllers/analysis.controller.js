@@ -30,10 +30,6 @@ function createAIServiceError(
 async function analyzeMessageWithAI(originalInput) {
   const url = `${AI_SERVICE_URL}/analyze`;
 
-  console.log("Sending message to AI:", {
-    url,
-  });
-
   try {
     const response = await fetch(url, {
       method: "POST",
@@ -124,13 +120,6 @@ async function analyzeMessageWithAI(originalInput) {
 async function analyzeUrlWithAI(originalInput) {
   const url =
     `${AI_SERVICE_URL}/analyze-url`;
-
-  console.log(
-    "Sending URL for STATIC analysis:",
-    {
-      serviceUrl: url,
-    }
-  );
 
   try {
     const response = await fetch(
@@ -224,16 +213,6 @@ async function analyzeScreenshotWithAI(file) {
   const url =
     `${AI_SERVICE_URL}/analyze-screenshot`;
 
-  console.log(
-    "Sending screenshot to AI:",
-    {
-      url,
-      fileName: file.originalname,
-      mimeType: file.mimetype,
-      size: file.size,
-    }
-  );
-
   try {
     const formData = new FormData();
 
@@ -273,21 +252,6 @@ async function analyzeScreenshotWithAI(file) {
         "AI_INVALID_RESPONSE"
       );
     }
-
-    console.log(
-      "AI SCREENSHOT RESPONSE:",
-      {
-        status: response.status,
-        ok: response.ok,
-        hasResult:
-          Boolean(
-            payload?.result
-          ),
-        code:
-          payload?.error?.code ||
-          payload?.code,
-      }
-    );
 
     if (!response.ok) {
       const status =
@@ -366,21 +330,6 @@ export async function createAnalysisController(
       inputType,
       originalInput,
     } = req.body || {};
-
-    console.log(
-      "ANALYSIS REQUEST:",
-      {
-        inputType,
-        hasFile:
-          Boolean(req.file),
-        fileName:
-          req.file?.originalname,
-        mimeType:
-          req.file?.mimetype,
-        fileSize:
-          req.file?.size,
-      }
-    );
 
     if (!inputType) {
       return res.status(400).json({
@@ -661,33 +610,7 @@ export async function createAnalysisController(
       data: analysis,
     });
   } catch (error) {
-    console.error(
-      "========== ANALYSIS ERROR =========="
-    );
-
-    console.error(
-      "Message:",
-      error?.message
-    );
-
-    console.error(
-      "Code:",
-      error?.code
-    );
-
-    console.error(
-      "Status:",
-      error?.status
-    );
-
-    console.error(
-      "Stack:",
-      error?.stack
-    );
-
-    console.error(
-      "===================================="
-    );
+    console.error("Analysis error:", { code: error?.code, status: error?.status });
 
     /*
      * --------------------------------------
@@ -852,10 +775,6 @@ export async function getAnalysisHistoryController(
       data: history,
     });
   } catch (error) {
-    console.error(
-      "GET ANALYSIS HISTORY ERROR:",
-      error
-    );
 
     return res.status(500).json({
       success: false,
@@ -864,3 +783,10 @@ export async function getAnalysisHistoryController(
     });
   }
 }
+
+
+
+
+
+
+

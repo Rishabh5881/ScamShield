@@ -69,18 +69,7 @@ export async function analyzeMessage(text) {
   try {
     parsedResponse = JSON.parse(rawResponse);
   } catch (error) {
-    console.error(
-      "========== AI JSON PARSE ERROR =========="
-    );
-
-    console.error(
-      "Raw AI response:",
-      rawResponse
-    );
-
-    console.error(
-      "=========================================="
-    );
+    console.error("AI JSON PARSE ERROR");
 
     throw new Error("AI returned invalid JSON");
   }
@@ -90,27 +79,7 @@ export async function analyzeMessage(text) {
     validateAnalysisOutput(parsedResponse);
 
   if (!validation.success) {
-    console.error(
-      "========== AI SCHEMA VALIDATION ERROR =========="
-    );
-
-    console.error(
-      "Validation issues:",
-      validation.error.issues
-    );
-
-    console.error(
-      "AI response received:",
-      JSON.stringify(
-        parsedResponse,
-        null,
-        2
-      )
-    );
-
-    console.error(
-      "==============================================="
-    );
+    console.error("AI SCHEMA VALIDATION ERROR");
 
     throw new Error(
       "AI response failed schema validation"
@@ -150,26 +119,7 @@ export async function analyzeMessage(text) {
     );
 
   if (!hybridValidation.success) {
-    console.error(
-      "========== HYBRID RISK VALIDATION ERROR =========="
-    );
-
-    console.error(
-      hybridValidation.error.issues
-    );
-
-    console.error(
-      "Hybrid risk:",
-      JSON.stringify(
-        hybridRisk,
-        null,
-        2
-      )
-    );
-
-    console.error(
-      "=================================================="
-    );
+    console.error("HYBRID RISK VALIDATION ERROR");
 
     throw new Error(
       "Hybrid risk validation failed"
@@ -229,26 +179,7 @@ export async function analyzeMessage(text) {
     );
 
   if (!riskDecisionValidation.success) {
-    console.error(
-      "========== RISK DECISION VALIDATION ERROR =========="
-    );
-
-    console.error(
-      riskDecisionValidation.error.issues
-    );
-
-    console.error(
-      "Risk decision:",
-      JSON.stringify(
-        guardedRiskDecision,
-        null,
-        2
-      )
-    );
-
-    console.error(
-      "===================================================="
-    );
+    console.error("RISK DECISION VALIDATION ERROR");
 
     throw new Error(
       "Risk decision validation failed"
@@ -310,3 +241,5 @@ export async function analyzeMessage(text) {
       validatedRiskDecision,
   };
 }
+
+

@@ -250,23 +250,7 @@ function createProviderError(error) {
   const message =
     getErrorMessage(error);
 
-  console.error(
-    "========== SCREENSHOT AI ERROR =========="
-  );
-
-  console.error(
-    "Status:",
-    status
-  );
-
-  console.error(
-    "Message:",
-    message
-  );
-
-  console.error(
-    "=========================================="
-  );
+  console.error("SCREENSHOT AI ERROR:", { code: error?.code, status });
 
   // ----------------------------------------
   // BAD REQUEST
@@ -739,10 +723,7 @@ export async function generateScreenshotAIResponse({
       lastError =
         error;
 
-      console.error(
-        `SCREENSHOT AI ATTEMPT ${attempt} FAILED:`,
-        getErrorDetails(error)
-      );
+      console.error(`SCREENSHOT AI ATTEMPT ${attempt} FAILED:`, { code: error?.code, status: getStatusCode(error) });
 
       const status =
         getStatusCode(error);
@@ -799,15 +780,13 @@ export async function generateScreenshotAIResponse({
   // FINAL ERROR
   // ----------------------------------------
 
-  console.error(
-    "SCREENSHOT AI FINAL ERROR:",
-    getErrorDetails(
-      lastError
-    )
-  );
+  console.error("SCREENSHOT AI FINAL ERROR:", { code: lastError?.code, status: getStatusCode(lastError) });
 
   throw createProviderError(
     lastError
   );
 }
+
+
+
 
