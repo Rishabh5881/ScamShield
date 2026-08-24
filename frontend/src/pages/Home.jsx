@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 
 import { Link } from "react-router-dom";
-import "../styles/home.css";
+import "../styles/Home.css";
 
 const features = [
   {
