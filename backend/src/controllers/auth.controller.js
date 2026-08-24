@@ -3,6 +3,7 @@ import {
   signupSchema,
   loginSchema,
 } from "../validators/auth.validator.js";
+import prisma from "../config/prisma.js";
 
 export async function signupController(req, res, next) {
   try {
@@ -35,9 +36,25 @@ export async function loginController(req, res, next) {
     next(error);
   }
 }
-export async function logoutController(req, res) {
-  res.status(200).json({
-    success: true,
-    message: "Logout successful",
-  });
+
+export async function logoutController(req, res, next) {
+  try {
+    await prisma.user.update({
+      where: {
+        id: req.user.id,
+      },
+      data: {
+        tokenVersion: {
+          increment: 1,
+        },
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Logout successful",
+    });
+  } catch (error) {
+    next(error);
+  }
 }

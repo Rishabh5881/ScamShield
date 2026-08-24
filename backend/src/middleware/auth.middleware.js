@@ -5,6 +5,8 @@ export async function authenticate(req, res, next) {
   try {
     const authHeader = req.headers.authorization;
 
+    console.log("AUTH HEADER DEBUG:", JSON.stringify(authHeader));
+
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return res.status(401).json({
         success: false,
@@ -13,6 +15,13 @@ export async function authenticate(req, res, next) {
     }
 
     const token = authHeader.substring(7);
+
+    console.log("TOKEN DEBUG:", {
+      length: token.length,
+      parts: token.split(".").length,
+      start: token.substring(0, 10),
+      end: token.substring(token.length - 10),
+    });
 
     const decoded = verifyToken(token);
 
@@ -25,6 +34,7 @@ export async function authenticate(req, res, next) {
         name: true,
         email: true,
         createdAt: true,
+        tokenVersion: true,
       },
     });
 
@@ -35,10 +45,21 @@ export async function authenticate(req, res, next) {
       });
     }
 
-    req.user = user;
+    if (decoded.tokenVersion !== user.tokenVersion) {
+      return res.status(401).json({
+        success: false,
+        message: "Token has been revoked",
+      });
+    }
+
+    const { tokenVersion, ...safeUser } = user;
+
+    req.user = safeUser;
 
     next();
   } catch (error) {
+    console.error("AUTH DEBUG:", error.name, error.message);
+
     return res.status(401).json({
       success: false,
       message: "Invalid or expired token",

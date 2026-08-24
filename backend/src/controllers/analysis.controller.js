@@ -3,9 +3,8 @@ import {
   getAnalysisHistory,
 } from "../services/analysis.service.js";
 
-const AI_SERVICE_URL =
-  process.env.AI_SERVICE_URL ||
-  "http://localhost:6100";
+const AI_SERVICE_URL = process.env.AI_SERVICE_URL || "http://localhost:6100";
+const AI_SERVICE_TIMEOUT_MS = 15000;
 
 /**
  * Create a sanitized error while preserving
@@ -32,6 +31,7 @@ async function analyzeMessageWithAI(originalInput) {
 
   try {
     const response = await fetch(url, {
+      signal: AbortSignal.timeout(AI_SERVICE_TIMEOUT_MS),
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -84,7 +84,7 @@ async function analyzeMessageWithAI(originalInput) {
     return payload.result;
   } catch (error) {
     console.error(
-      "BACKEND → AI MESSAGE ERROR:",
+      "BACKEND ? AI MESSAGE ERROR:",
       {
         name: error?.name,
         code: error?.code,
@@ -125,6 +125,7 @@ async function analyzeUrlWithAI(originalInput) {
     const response = await fetch(
       url,
       {
+        signal: AbortSignal.timeout(AI_SERVICE_TIMEOUT_MS),
         method: "POST",
         headers: {
           "Content-Type":
@@ -170,7 +171,7 @@ async function analyzeUrlWithAI(originalInput) {
     return payload.result;
   } catch (error) {
     console.error(
-      "BACKEND → AI URL STATIC ANALYSIS ERROR:",
+      "BACKEND ? AI URL STATIC ANALYSIS ERROR:",
       {
         name: error?.name,
         code: error?.code,
@@ -235,6 +236,7 @@ async function analyzeScreenshotWithAI(file) {
     const response = await fetch(
       url,
       {
+        signal: AbortSignal.timeout(AI_SERVICE_TIMEOUT_MS),
         method: "POST",
         body: formData,
       }
@@ -285,7 +287,7 @@ async function analyzeScreenshotWithAI(file) {
     return payload.result;
   } catch (error) {
     console.error(
-      "BACKEND → AI SCREENSHOT ERROR:",
+      "BACKEND ? AI SCREENSHOT ERROR:",
       {
         name: error?.name,
         code: error?.code,
@@ -783,10 +785,3 @@ export async function getAnalysisHistoryController(
     });
   }
 }
-
-
-
-
-
-
-

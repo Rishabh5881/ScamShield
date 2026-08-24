@@ -5,6 +5,7 @@ export function generateToken(user) {
     {
       userId: user.id,
       email: user.email,
+      tokenVersion: user.tokenVersion ?? 0,
     },
     process.env.JWT_SECRET,
     {
