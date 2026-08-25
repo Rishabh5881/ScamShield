@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Shield,
@@ -18,10 +18,10 @@ import {
   TrendingUp,
   KeyRound,
   Activity,
-  Eye,
+
   Zap,
   ChevronRight,
-  CircleCheck,
+
   ShieldCheck,
 } from "lucide-react";
 

@@ -65,7 +65,7 @@ export function AuthProvider({ children }) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [auth?.token]);
 
   // ==========================================
   // PERSIST AUTH SESSION
