@@ -1,725 +1,953 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import {
+  Shield,
   ArrowRight,
-  ArrowUpRight,
-  BrainCircuit,
+  Play,
   Check,
+  MessageSquare,
+  Link2,
+  Image,
+  Brain,
+  AlertTriangle,
+  Lock,
+  BarChart3,
+  ScanSearch,
+  CreditCard,
+  BriefcaseBusiness,
+  TrendingUp,
+  KeyRound,
+  Activity,
+  Eye,
+  Zap,
   ChevronRight,
   CircleCheck,
-  Eye,
-  Github,
-  Globe2,
-  LockKeyhole,
-  Radar,
-  ScanSearch,
-  Search,
-  ServerCog,
-  Shield,
   ShieldCheck,
-  Sparkles,
-  TriangleAlert,
-  UserRound,
-  Users,
-  Zap,
 } from "lucide-react";
 
-import { Link } from "react-router-dom";
 import "../styles/Home.css";
+
+const tickerItems = [
+  ["critical", "Phishing link blocked", "91"],
+  ["high", "Fake job offer flagged", "74"],
+  ["critical", "UPI scam message detected", "88"],
+  ["safe", "URL verified clean", "04"],
+  ["critical", "Bank impersonation caught", "96"],
+  ["suspicious", "Investment scam identified", "79"],
+  ["critical", "Credential theft attempt", "90"],
+];
 
 const features = [
   {
-    number: "01",
-    icon: MessageIcon,
-    title: "Message Intelligence",
-    description:
-      "Detect phishing, impersonation, urgency manipulation, credential theft and social-engineering patterns hidden inside suspicious messages.",
-    tag: "TEXT ANALYSIS",
+    icon: Brain,
+    title: "AI Scam Detection",
+    text: "Detect phishing and social engineering attempts using intelligent threat analysis.",
   },
   {
-    number: "02",
-    icon: Globe2,
+    icon: Link2,
     title: "URL Intelligence",
-    description:
-      "Inspect domains, paths, parameters and suspicious URL structures without directly visiting the destination.",
-    tag: "STATIC ANALYSIS",
+    text: "Analyze suspicious links without visiting dangerous destinations.",
   },
   {
-    number: "03",
-    icon: Eye,
-    title: "Visual Threat Analysis",
-    description:
-      "Analyze suspicious screenshots and extract actionable security signals from visual content.",
-    tag: "VISION AI",
+    icon: Image,
+    title: "Screenshot Analysis",
+    text: "Upload suspicious screenshots and identify visual scam indicators.",
   },
   {
-    number: "04",
-    icon: Radar,
-    title: "Security Analytics",
-    description:
-      "Understand detection history, risk trends, categories, severity and overall security exposure.",
-    tag: "THREAT ANALYTICS",
+    icon: BarChart3,
+    title: "Risk Scoring",
+    text: "Understand every threat through a simple 0–100 security score.",
+  },
+  {
+    icon: AlertTriangle,
+    title: "Threat Detection",
+    text: "Identify phishing, banking fraud, UPI scams, job scams and more.",
+  },
+  {
+    icon: Activity,
+    title: "Security Insights",
+    text: "Track analysis history and understand recurring threat patterns.",
   },
 ];
 
-const workflow = [
-  {
-    number: "01",
-    title: "Submit",
-    description:
-      "Paste a suspicious message or URL, or upload a screenshot you don't trust.",
-    icon: Search,
-  },
-  {
-    number: "02",
-    title: "Detect",
-    description:
-      "Validation, AI intelligence and deterministic risk signals evaluate the submitted content.",
-    icon: ScanSearch,
-  },
-  {
-    number: "03",
-    title: "Understand",
-    description:
-      "Receive a risk score, classification, red flags, attack patterns and an explainable decision.",
-    icon: BrainCircuit,
-  },
-  {
-    number: "04",
-    title: "Act safely",
-    description:
-      "Follow clear recommendations before clicking, paying, replying or sharing sensitive information.",
-    icon: ShieldCheck,
-  },
-];
-
-const securityItems = [
-  {
-    icon: LockKeyhole,
-    title: "Protected processing",
-    text: "Security-first request handling",
-  },
-  {
-    icon: BrainCircuit,
-    title: "Explainable AI",
-    text: "Understand why a threat was detected",
-  },
-  {
-    icon: Globe2,
-    title: "Static URL analysis",
-    text: "Analyze without visiting destinations",
-  },
-  {
-    icon: Eye,
-    title: "Screenshot intelligence",
-    text: "Visual threat signal extraction",
-  },
+const threats = [
   {
     icon: Shield,
-    title: "Authenticated access",
-    text: "Protected user-specific analysis",
+    title: "Phishing",
+    text: "Fake messages designed to trick you into revealing sensitive information.",
+    level: 3,
   },
   {
-    icon: ServerCog,
-    title: "Controlled architecture",
-    text: "Separated application services",
+    icon: CreditCard,
+    title: "Banking Fraud",
+    text: "Impersonation attempts designed to steal account credentials or funds.",
+    level: 4,
+  },
+  {
+    icon: Link2,
+    title: "Payment & UPI Scams",
+    text: "Fraudulent payment requests and deceptive transaction links.",
+    level: 2,
+  },
+  {
+    icon: BriefcaseBusiness,
+    title: "Fake Job Offers",
+    text: "Bogus recruitment schemes designed to extract money or personal data.",
+    level: 2,
+  },
+  {
+    icon: TrendingUp,
+    title: "Investment Scams",
+    text: "Fraudulent schemes promising unrealistic investment returns.",
+    level: 3,
+  },
+  {
+    icon: KeyRound,
+    title: "Credential Theft",
+    text: "Attempts to steal passwords and login details through deception.",
+    level: 4,
   },
 ];
 
-const team = [
+const recentActivity = [
   {
-    number: "01",
-    role: "FULL-STACK / SECURITY",
-    title: "Team Member 01",
-    description:
-      "Focused on the core ScamShield platform, secure application architecture and the end-to-end product experience.",
+    name: "Suspicious Bank Message",
+    status: "CRITICAL",
+    score: 94,
+    type: "critical",
   },
   {
-    number: "02",
-    role: "AI / INTELLIGENCE",
-    title: "Team Member 02",
-    description:
-      "Focused on threat intelligence, AI-powered detection, risk signals and explainable security insights.",
+    name: "Safe Website",
+    status: "SAFE",
+    score: 8,
+    type: "safe",
   },
   {
-    number: "03",
-    role: "BACKEND / DATA",
-    title: "Team Member 03",
-    description:
-      "Focused on backend services, APIs, authentication, database architecture and reliable analysis pipelines.",
-  },
-  {
-    number: "04",
-    role: "FRONTEND / EXPERIENCE",
-    title: "Team Member 04",
-    description:
-      "Focused on creating a responsive, intuitive and high-quality security experience across ScamShield.",
+    name: "UPI Payment Scam",
+    status: "HIGH",
+    score: 82,
+    type: "high",
   },
 ];
 
-function MessageIcon({ size = 20 }) {
+function SectionHeading({ eyebrow, title, description, center = true }) {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.7"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M21 11.5a8.38 8.38 0 0 1-9 8.3 8.5 8.5 0 0 1-4.1-1l-4.9 1.4 1.4-4.8A8.5 8.5 0 1 1 21 11.5Z" />
-      <path d="M8 12h.01" />
-      <path d="M12 12h.01" />
-      <path d="M16 12h.01" />
-    </svg>
-  );
-}
-
-function BrandMark() {
-  return (
-    <div className="ss-brand-mark" aria-hidden="true">
-      <ShieldCheck size={21} strokeWidth={1.8} />
+    <div className={`section-heading ${center ? "center" : ""}`}>
+      {eyebrow && <span className="eyebrow warm">{eyebrow}</span>}
+      <h2 dangerouslySetInnerHTML={{ __html: title }} />
+      {description && <p>{description}</p>}
     </div>
   );
 }
 
-function SectionLabel({ icon: Icon, children }) {
-  return (
-    <div className="ss-section-label">
-      <span className="ss-label-icon">
-        <Icon size={13} strokeWidth={1.8} />
-      </span>
-      <span>{children}</span>
-    </div>
-  );
+function PerimeterCard({ children, className = "" }) {
+  return <div className={`watch-card ${className}`}>{children}</div>;
 }
 
-export default function Home() {
+function Home() {
+  const [scrolled, setScrolled] = useState(false);
+  const [activeTab, setActiveTab] = useState("message");
+
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 20);
+
+    window.addEventListener("scroll", handleScroll);
+    handleScroll();
+
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  const scrollTo = (id) => {
+    document.getElementById(id)?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  };
+
   return (
-    <main className="ss-home">
-      {/* =====================================================
-          BACKGROUND SYSTEM
-      ====================================================== */}
+    <div className="home-page">
+      {/* Background */}
+      <div className="home-grid" />
+      <div className="home-noise" />
+      <div className="ambient ambient-one" />
+      <div className="ambient ambient-two" />
 
-      <div className="ss-background" aria-hidden="true">
-        <div className="ss-grid" />
-        <div className="ss-noise" />
-        <div className="ss-orb ss-orb-a" />
-        <div className="ss-orb ss-orb-b" />
-        <div className="ss-orb ss-orb-c" />
-      </div>
+      {/* ================= NAVBAR ================= */}
+      <nav className={`home-navbar ${scrolled ? "scrolled" : ""}`}>
+        <Link to="/" className="home-logo">
+          <span className="logo-shield">
+            <Shield size={17} />
+          </span>
 
-      {/* =====================================================
-          NAVBAR
-      ====================================================== */}
+          <span>
+            SCAMSHIELD <strong>AI</strong>
+          </span>
+        </Link>
 
-      <header className="ss-navbar">
-        <div className="ss-container ss-nav-inner">
-          <Link to="/" className="ss-brand">
-            <BrandMark />
+        <div className="home-nav-links">
+          <a href="#top">Home</a>
+          <a href="#how">How It Works</a>
+          <a href="#features">Features</a>
+          <a href="#security">Security</a>
+          <a href="#dashboard">Dashboard</a>
+        </div>
 
-            <span className="ss-brand-name">
-              Scam<span>Shield</span>
-            </span>
-
-            <span className="ss-brand-ai">AI</span>
+        <div className="home-nav-actions">
+          <Link to="/login" className="nav-signin">
+            Sign In
           </Link>
 
-          <nav className="ss-nav-links" aria-label="Primary navigation">
-            <a href="#features">Features</a>
-            <a href="#how-it-works">How it works</a>
-            <a href="#security">Security</a>
-            <a href="#team">Team</a>
-          </nav>
+          <Link to="/signup" className="gold-button nav-get-started">
+            Get Started
+            <ArrowRight size={15} />
+          </Link>
+        </div>
 
-          <div className="ss-nav-actions">
-            <Link to="/login" className="ss-login">
-              Sign in
-            </Link>
+        <button
+          className="mobile-nav-button"
+          onClick={() => scrollTo("features")}
+          aria-label="Open navigation"
+        >
+          <Activity size={19} />
+        </button>
+      </nav>
 
-            <Link to="/signup" className="ss-nav-button">
-              Get started
-              <ArrowUpRight size={14} />
-            </Link>
+      {/* ================= HERO ================= */}
+      <header className="hero-section" id="top">
+        <div className="page-container hero-layout">
+          <div className="hero-copy">
+            <div className="hero-eyebrow">
+              <span className="live-dot" />
+              AI-POWERED DIGITAL SECURITY
+            </div>
+
+            <h1>
+              Detect Scams Before They Become{" "}
+              <span className="gold-text">Damage.</span>
+            </h1>
+
+            <p className="hero-description">
+              ScamShield AI analyzes suspicious messages, URLs and screenshots
+              using intelligent threat detection to help you identify digital
+              scams before it&apos;s too late.
+            </p>
+
+            <div className="hero-actions">
+              <Link to="/analyze" className="gold-button large-button">
+                <Shield size={17} />
+                Analyze Something Now
+                <ArrowRight size={16} />
+              </Link>
+
+              <button
+                className="outline-button large-button"
+                onClick={() => scrollTo("how")}
+              >
+                <Play size={15} />
+                How It Works
+              </button>
+            </div>
+
+            <div className="trust-list">
+              <div>
+                <span>
+                  <Check size={11} />
+                </span>
+                AI-Powered Analysis
+              </div>
+
+              <div>
+                <span>
+                  <Check size={11} />
+                </span>
+                Real-Time Threat Detection
+              </div>
+
+              <div>
+                <span>
+                  <Check size={11} />
+                </span>
+                Privacy-Focused Processing
+              </div>
+            </div>
+          </div>
+
+          {/* HERO VISUAL */}
+          <div className="hero-visual">
+            <div className="hero-orbit orbit-one" />
+            <div className="hero-orbit orbit-two" />
+            <div className="hero-orbit orbit-three" />
+
+            <div className="radar-line" />
+
+            <PerimeterCard className="threat-analysis-card">
+              <div className="analysis-card-top">
+                <span>THREAT ANALYSIS</span>
+                <span className="analysis-live">
+                  <i />
+                  LIVE
+                </span>
+              </div>
+
+              <div className="analysis-card-title">
+                Suspicious Activity Detected
+              </div>
+
+              <div className="risk-display">
+                <div className="risk-circle">
+                  <svg viewBox="0 0 120 120">
+                    <circle
+                      cx="60"
+                      cy="60"
+                      r="51"
+                      className="risk-track"
+                    />
+                    <circle
+                      cx="60"
+                      cy="60"
+                      r="51"
+                      className="risk-progress"
+                    />
+                  </svg>
+
+                  <div className="risk-number">
+                    <strong>94</strong>
+                    <span>/ 100</span>
+                  </div>
+                </div>
+
+                <div>
+                  <span className="critical-badge">
+                    <AlertTriangle size={12} />
+                    CRITICAL RISK
+                  </span>
+
+                  <p className="risk-caption">
+                    Multiple high-confidence threat signals detected.
+                  </p>
+                </div>
+              </div>
+
+              <div className="fake-message">
+                <MessageSquare size={14} />
+                <span>
+                  &quot;Your bank account will be blocked. Verify your OTP
+                  immediately…&quot;
+                </span>
+              </div>
+
+              <div className="analysis-footer">
+                <span>
+                  <ShieldCheck size={13} />
+                  AI confidence
+                </span>
+                <strong>96%</strong>
+              </div>
+            </PerimeterCard>
+
+            <div className="floating-signal signal-clean">
+              <ShieldCheck size={14} />
+              <span>
+                <small>URL SCAN</small>
+                Clean
+              </span>
+            </div>
+
+            <div className="floating-signal signal-danger">
+              <AlertTriangle size={14} />
+              <span>
+                <small>THREAT</small>
+                Phishing Detected
+              </span>
+            </div>
+
+            <div className="floating-signal signal-live">
+              <Activity size={14} />
+              <span>
+                <small>ENGINE</small>
+                Monitoring…
+              </span>
+            </div>
           </div>
         </div>
       </header>
 
-      {/* =====================================================
-          HERO
-      ====================================================== */}
-
-      <section className="ss-hero">
-        <div className="ss-container ss-hero-grid">
-          <div className="ss-hero-copy">
-            <div className="ss-status-pill">
-              <span className="ss-live-dot" />
-              AI SECURITY INTELLIGENCE
-              <span className="ss-pill-line" />
-              SYSTEM ONLINE
+      {/* ================= TICKER ================= */}
+      <div className="threat-ticker">
+        <div className="ticker-track">
+          {[...tickerItems, ...tickerItems].map((item, index) => (
+            <div className="ticker-item" key={`${item[1]}-${index}`}>
+              <span className={`ticker-dot ${item[0]}`} />
+              <span>{item[1]}</span>
+              <strong>RISK {item[2]}</strong>
             </div>
+          ))}
+        </div>
+      </div>
 
-            <h1>
-              Detect scams
-              <br />
-              <span>before they hurt.</span>
-            </h1>
+      {/* ================= LIVE ANALYSIS ================= */}
+      <section className="home-section analysis-section" id="analyze">
+        <div className="page-container">
+          <SectionHeading
+            eyebrow="LIVE DEMO"
+            title={`See ScamShield AI in <span class="gold-text">Action.</span>`}
+            description="Our intelligence engine analyzes digital threats and turns complex signals into a clear security decision."
+          />
 
-            <p className="ss-hero-description">
-              ScamShield transforms suspicious messages, URLs and screenshots
-              into clear security intelligence — helping you understand the
-              threat before you click, pay or respond.
-            </p>
+          <div className="live-analysis-panel">
+            <div className="analysis-input-side">
+              <div className="analysis-tabs">
+                <button
+                  className={activeTab === "message" ? "active" : ""}
+                  onClick={() => setActiveTab("message")}
+                >
+                  <MessageSquare size={14} />
+                  Message
+                </button>
 
-            <div className="ss-hero-actions">
-              <Link to="/signup" className="ss-primary-button">
-                Start protecting
-                <ArrowRight size={16} />
-              </Link>
+                <button
+                  className={activeTab === "url" ? "active" : ""}
+                  onClick={() => setActiveTab("url")}
+                >
+                  <Link2 size={14} />
+                  URL
+                </button>
 
-              <Link to="/login" className="ss-secondary-button">
-                Explore dashboard
-                <ChevronRight size={15} />
-              </Link>
-            </div>
-
-            <div className="ss-trust-row">
-              <span>
-                <CircleCheck size={14} />
-                Explainable AI
-              </span>
-
-              <span>
-                <CircleCheck size={14} />
-                Static URL analysis
-              </span>
-
-              <span>
-                <CircleCheck size={14} />
-                Secure processing
-              </span>
-            </div>
-          </div>
-
-          {/* THREAT CONSOLE */}
-
-          <div className="ss-threat-wrapper">
-            <div className="ss-threat-halo" />
-
-            <div className="ss-floating ss-floating-top">
-              <div className="ss-floating-icon">
-                <Radar size={15} />
+                <button
+                  className={activeTab === "screenshot" ? "active" : ""}
+                  onClick={() => setActiveTab("screenshot")}
+                >
+                  <Image size={14} />
+                  Screenshot
+                </button>
               </div>
-              <div>
-                <span>THREAT ENGINE</span>
-                <strong>ACTIVE</strong>
+
+              <div className="input-panel-content">
+                {activeTab === "message" && (
+                  <>
+                    <div className="field-label">
+                      <span>MESSAGE SIGNAL</span>
+                      <small>Sample</small>
+                    </div>
+
+                    <div className="sample-input">
+                      Congratulations! Your bank account has been suspended.
+                      Click here immediately to verify your account details.
+                    </div>
+                  </>
+                )}
+
+                {activeTab === "url" && (
+                  <>
+                    <div className="field-label">
+                      <span>URL SIGNAL</span>
+                      <small>Static analysis</small>
+                    </div>
+
+                    <div className="sample-input url-input">
+                      https://secure-bank-verification.example/login
+                    </div>
+                  </>
+                )}
+
+                {activeTab === "screenshot" && (
+                  <>
+                    <div className="field-label">
+                      <span>SCREENSHOT SIGNAL</span>
+                      <small>Vision analysis</small>
+                    </div>
+
+                    <div className="screenshot-placeholder">
+                      <Image size={28} />
+                      <strong>Suspicious screenshot</strong>
+                      <span>AI vision analysis ready</span>
+                    </div>
+                  </>
+                )}
+
+                <Link to="/analyze" className="gold-button analysis-button">
+                  <ScanSearch size={16} />
+                  Analyze Threat
+                  <ArrowRight size={15} />
+                </Link>
               </div>
             </div>
 
-            <div className="ss-floating ss-floating-bottom">
-              <div className="ss-floating-icon teal">
-                <Sparkles size={15} />
-              </div>
-              <div>
-                <span>AI SIGNAL</span>
-                <strong>12 indicators</strong>
-              </div>
-            </div>
-
-            <div className="ss-threat-console">
-              <div className="ss-console-scan" />
-
-              <div className="ss-console-header">
+            <div className="threat-report">
+              <div className="report-heading">
                 <div>
-                  <span className="ss-console-kicker">
-                    THREAT INTELLIGENCE
-                  </span>
-                  <strong>Live security analysis</strong>
+                  <span className="mono-label">AI THREAT REPORT</span>
+                  <h3>Security assessment</h3>
                 </div>
 
-                <div className="ss-console-status">
-                  <span />
-                  LIVE
+                <span className="report-status">
+                  <i />
+                  ANALYZED
+                </span>
+              </div>
+
+              <div className="scam-status">
+                <AlertTriangle size={16} />
+                Scam Detected
+              </div>
+
+              <div className="report-metrics">
+                <div className="report-metric">
+                  <span>RISK SCORE</span>
+                  <strong className="danger-value">87 / 100</strong>
+                </div>
+
+                <div className="report-metric">
+                  <span>THREAT TYPE</span>
+                  <strong>Phishing</strong>
+                </div>
+
+                <div className="report-metric">
+                  <span>SEVERITY</span>
+                  <strong className="warning-value">HIGH</strong>
+                </div>
+
+                <div className="report-metric">
+                  <span>CONFIDENCE</span>
+                  <strong className="success-value">96%</strong>
                 </div>
               </div>
 
-              <div className="ss-risk-area">
-                <div className="ss-risk-ring">
-                  <div className="ss-risk-inner">
-                    <span>RISK</span>
-                    <strong>94</strong>
-                    <small>/ 100</small>
-                  </div>
+              <div className="red-flags">
+                <div>
+                  <AlertTriangle size={14} />
+                  Urgency manipulation
                 </div>
 
-                <div className="ss-risk-meta">
-                  <span className="ss-risk-label">
-                    <TriangleAlert size={13} />
-                    THREAT DETECTED
-                  </span>
-
-                  <strong>Phishing attempt</strong>
-
-                  <div className="ss-critical">
-                    CRITICAL
-                  </div>
-                </div>
-              </div>
-
-              <div className="ss-analysis-stack">
-                <div className="ss-analysis-row">
-                  <div className="ss-analysis-icon">
-                    <Globe2 size={15} />
-                  </div>
-
-                  <div className="ss-analysis-copy">
-                    <span>URL INTELLIGENCE</span>
-                    <strong>Destination not visited</strong>
-                  </div>
-
-                  <Check size={15} className="ss-check" />
+                <div>
+                  <AlertTriangle size={14} />
+                  Credential theft attempt
                 </div>
 
-                <div className="ss-analysis-row">
-                  <div className="ss-analysis-icon brass">
-                    <Radar size={15} />
-                  </div>
-
-                  <div className="ss-analysis-copy">
-                    <span>RISK ENGINE</span>
-                    <strong>Suspicious patterns</strong>
-                  </div>
-
-                  <span className="ss-analysis-value">HIGH</span>
+                <div>
+                  <AlertTriangle size={14} />
+                  Suspicious link
                 </div>
 
-                <div className="ss-analysis-row">
-                  <div className="ss-analysis-icon green">
-                    <LockKeyhole size={15} />
-                  </div>
-
-                  <div className="ss-analysis-copy">
-                    <span>PROCESSING</span>
-                    <strong>Analysis secured</strong>
-                  </div>
-
-                  <Check size={15} className="ss-check" />
+                <div>
+                  <AlertTriangle size={14} />
+                  Impersonation
                 </div>
-              </div>
-
-              <div className="ss-console-footer">
-                <span>SCAMSHIELD RISK ENGINE</span>
-                <span>ANALYSIS ID #94A7</span>
               </div>
             </div>
-
-            <div className="ss-orbit ss-orbit-1" />
-            <div className="ss-orbit ss-orbit-2" />
           </div>
         </div>
       </section>
 
-      {/* =====================================================
-          METRICS
-      ====================================================== */}
+      {/* ================= HOW IT WORKS ================= */}
+      <section className="home-section how-section" id="how">
+        <div className="page-container">
+          <SectionHeading
+            eyebrow="THREAT WORKFLOW"
+            title={`Security Intelligence in <span class="gold-text">Three Steps.</span>`}
+            description="From suspicious signal to actionable security decision."
+          />
 
-      <section className="ss-metrics">
-        <div className="ss-container ss-metrics-grid">
-          <div>
-            <strong>01</strong>
-            <span>Unified threat engine</span>
-          </div>
+          <div className="steps-grid">
+            <PerimeterCard className="step-card">
+              <span className="step-number">STEP 01</span>
 
-          <div>
-            <strong>03</strong>
-            <span>Analysis surfaces</span>
-          </div>
+              <div className="step-icon">
+                <MessageSquare size={23} />
+              </div>
 
-          <div>
-            <strong>100</strong>
-            <span>Risk score range</span>
-          </div>
+              <h3>Submit</h3>
+              <p>Send suspicious digital content to ScamShield.</p>
 
-          <div>
-            <strong>24/7</strong>
-            <span>Protection mindset</span>
+              <ul>
+                <li>Message</li>
+                <li>URL</li>
+                <li>Screenshot</li>
+              </ul>
+            </PerimeterCard>
+
+            <PerimeterCard className="step-card">
+              <span className="step-number">STEP 02</span>
+
+              <div className="step-icon">
+                <Brain size={23} />
+              </div>
+
+              <h3>AI Analysis</h3>
+              <p>Multiple intelligence signals are evaluated together.</p>
+
+              <ul>
+                <li>Threat patterns</li>
+                <li>Suspicious language</li>
+                <li>Scam techniques</li>
+                <li>Risk signals</li>
+              </ul>
+            </PerimeterCard>
+
+            <PerimeterCard className="step-card">
+              <span className="step-number">STEP 03</span>
+
+              <div className="step-icon">
+                <ShieldCheck size={23} />
+              </div>
+
+              <h3>Stay Protected</h3>
+              <p>Receive a clear threat report and recommended action.</p>
+
+              <ul>
+                <li>Risk score</li>
+                <li>Scam classification</li>
+                <li>Severity</li>
+                <li>Red flags</li>
+                <li>Recommendations</li>
+              </ul>
+            </PerimeterCard>
           </div>
         </div>
       </section>
 
-      {/* =====================================================
-          FEATURES
-      ====================================================== */}
+      {/* ================= FEATURES ================= */}
+      <section className="home-section features-section" id="features">
+        <div className="page-container">
+          <SectionHeading
+            eyebrow="CAPABILITIES"
+            center={false}
+            title={`Intelligent Protection Against <span class="gold-text">Modern Scams.</span>`}
+            description="A security intelligence layer designed around the threats people actually encounter online."
+          />
 
-      <section id="features" className="ss-section">
-        <div className="ss-container">
-          <div className="ss-section-heading">
-            <SectionLabel icon={Radar}>
-              THREAT INTELLIGENCE
-            </SectionLabel>
-
-            <h2>
-              One shield.
-              <br />
-              <span>Multiple attack surfaces.</span>
-            </h2>
-
-            <p>
-              ScamShield combines message analysis, URL intelligence, visual
-              detection and security analytics into one focused threat
-              intelligence platform.
-            </p>
-          </div>
-
-          <div className="ss-feature-grid">
+          <div className="features-grid">
             {features.map((feature) => {
               const Icon = feature.icon;
 
               return (
-                <article className="ss-feature-card" key={feature.number}>
-                  <div className="ss-card-glow" />
-
-                  <div className="ss-feature-top">
-                    <span>{feature.number}</span>
-
-                    <div className="ss-feature-icon">
-                      <Icon size={19} strokeWidth={1.7} />
-                    </div>
+                <PerimeterCard className="feature-card" key={feature.title}>
+                  <div className="feature-icon">
+                    <Icon size={20} />
                   </div>
 
-                  <div className="ss-feature-content">
-                    <span className="ss-feature-tag">{feature.tag}</span>
+                  <h3>{feature.title}</h3>
+                  <p>{feature.text}</p>
 
-                    <h3>{feature.title}</h3>
-
-                    <p>{feature.description}</p>
-                  </div>
-
-                  <div className="ss-feature-arrow">
-                    <ArrowUpRight size={15} />
-                  </div>
-
-                  <div className="ss-card-line" />
-                </article>
+                  <span className="feature-arrow">
+                    <ChevronRight size={15} />
+                  </span>
+                </PerimeterCard>
               );
             })}
           </div>
         </div>
       </section>
 
-      {/* =====================================================
-          WORKFLOW
-      ====================================================== */}
+      {/* ================= THREATS ================= */}
+      <section className="home-section threats-section">
+        <div className="page-container">
+          <SectionHeading
+            eyebrow="THREAT COVERAGE"
+            title={`One AI. <span class="gold-text">Multiple Threats.</span>`}
+            description="Recognize common social-engineering and digital-fraud patterns before they become costly mistakes."
+          />
 
-      <section id="how-it-works" className="ss-section ss-workflow-section">
-        <div className="ss-container">
-          <div className="ss-section-heading centered">
-            <SectionLabel icon={Zap}>HOW IT WORKS</SectionLabel>
-
-            <h2>
-              From suspicious
-              <br />
-              <span>to understood.</span>
-            </h2>
-
-            <p>
-              A structured security pipeline turns uncertain digital content
-              into an explainable threat decision.
-            </p>
-          </div>
-
-          <div className="ss-workflow">
-            {workflow.map((item, index) => {
-              const Icon = item.icon;
+          <div className="threat-grid">
+            {threats.map((threat) => {
+              const Icon = threat.icon;
 
               return (
-                <div className="ss-workflow-item" key={item.number}>
-                  <div className="ss-workflow-node">
-                    <span>{item.number}</span>
-                    <div>
-                      <Icon size={19} strokeWidth={1.7} />
+                <PerimeterCard className="threat-card" key={threat.title}>
+                  <div className="threat-top">
+                    <div className="threat-icon">
+                      <Icon size={21} />
+                    </div>
+
+                    <div className="risk-level">
+                      {[0, 1, 2, 3].map((dot) => (
+                        <i
+                          key={dot}
+                          className={dot < threat.level ? "on" : ""}
+                        />
+                      ))}
                     </div>
                   </div>
 
-                  {index !== workflow.length - 1 && (
-                    <div className="ss-workflow-connector">
-                      <span />
-                    </div>
-                  )}
-
-                  <div className="ss-workflow-copy">
-                    <span>STAGE {item.number}</span>
-                    <h3>{item.title}</h3>
-                    <p>{item.description}</p>
-                  </div>
-                </div>
+                  <h3>{threat.title}</h3>
+                  <p>{threat.text}</p>
+                </PerimeterCard>
               );
             })}
           </div>
         </div>
       </section>
 
-      {/* =====================================================
-          SECURITY
-      ====================================================== */}
+      {/* ================= AI ENGINE ================= */}
+      <section className="home-section engine-section" id="security">
+        <div className="page-container">
+          <SectionHeading
+            eyebrow="INTELLIGENCE ENGINE"
+            title={`Powered by Intelligent <span class="gold-text">Threat Analysis.</span>`}
+            description="Different signals converge into one security assessment."
+          />
 
-      <section id="security" className="ss-section">
-        <div className="ss-container ss-security-grid">
-          <div className="ss-security-copy">
-            <SectionLabel icon={ShieldCheck}>
-              SECURITY FIRST
-            </SectionLabel>
+          <div className="engine-visual">
+            <div className="engine-ring ring-a" />
+            <div className="engine-ring ring-b" />
 
-            <h2>
-              Built to make you
-              <br />
-              <span>harder to scam.</span>
-            </h2>
-
-            <p>
-              ScamShield is designed around safe analysis, explainable
-              decisions and controlled threat intelligence — so you can
-              investigate suspicious content without blindly interacting with
-              it.
-            </p>
-
-            <Link to="/signup" className="ss-primary-button">
-              Secure your first analysis
-              <ArrowRight size={16} />
-            </Link>
-          </div>
-
-          <div className="ss-security-panel">
-            <div className="ss-security-panel-top">
-              <div>
-                <span>SYSTEM STATUS</span>
-                <strong>
-                  <i />
-                  PROTECTED
-                </strong>
-              </div>
-
-              <LockKeyhole size={18} />
+            <div className="engine-core">
+              <Brain size={28} />
+              <strong>AI</strong>
+              <span>INTELLIGENCE<br />ENGINE</span>
             </div>
 
-            <div className="ss-security-items">
-              {securityItems.map((item) => {
-                const Icon = item.icon;
-
-                return (
-                  <div className="ss-security-item" key={item.title}>
-                    <div className="ss-security-icon">
-                      <Icon size={17} strokeWidth={1.7} />
-                    </div>
-
-                    <div>
-                      <strong>{item.title}</strong>
-                      <span>{item.text}</span>
-                    </div>
-
-                    <Check size={14} className="ss-security-check" />
-                  </div>
-                );
-              })}
+            <div className="engine-node node-message">
+              <MessageSquare size={15} />
+              Message Analysis
             </div>
 
-            <div className="ss-security-terminal">
-              <span>$ scamshield --security-status</span>
-              <strong>all systems operational</strong>
+            <div className="engine-node node-url">
+              <Link2 size={15} />
+              URL Analysis
+            </div>
+
+            <div className="engine-node node-image">
+              <Image size={15} />
+              Screenshot Analysis
+            </div>
+
+            <div className="engine-node node-risk">
+              <Activity size={15} />
+              Risk Engine
+            </div>
+
+            <div className="engine-node node-report">
+              <BarChart3 size={15} />
+              Threat Report
+            </div>
+
+            <div className="engine-node node-recommendation">
+              <ShieldCheck size={15} />
+              Recommendation
             </div>
           </div>
         </div>
       </section>
 
-      {/* =====================================================
-          TEAM
-      ====================================================== */}
+      {/* ================= PRIVACY ================= */}
+      <section className="home-section privacy-section">
+        <div className="page-container">
+          <SectionHeading
+            eyebrow="PRIVACY & SECURITY"
+            title={`Your Security Shouldn't Cost Your <span class="gold-text">Privacy.</span>`}
+            description="Security intelligence should protect your information while helping you make better decisions."
+          />
 
-      <section id="team" className="ss-section ss-team-section">
-        <div className="ss-container">
-          <div className="ss-section-heading">
-            <SectionLabel icon={Users}>
-              THE PEOPLE BEHIND IT
-            </SectionLabel>
+          <div className="privacy-grid">
+            <PerimeterCard className="privacy-card">
+              <div className="privacy-icon">
+                <Lock size={22} />
+              </div>
+              <h3>Secure Processing</h3>
+              <p>Sensitive information is processed through controlled security workflows.</p>
+            </PerimeterCard>
 
-            <h2>
-              Built by people
-              <br />
-              <span>who care about security.</span>
-            </h2>
+            <PerimeterCard className="privacy-card">
+              <div className="privacy-icon">
+                <Shield size={22} />
+              </div>
+              <h3>Privacy Focused</h3>
+              <p>Designed to minimize unnecessary exposure of user information.</p>
+            </PerimeterCard>
 
-            <p>
-              ScamShield is a collaborative project combining engineering, AI,
-              security and product thinking into one mission — making
-              suspicious digital interactions easier to understand.
-            </p>
+            <PerimeterCard className="privacy-card">
+              <div className="privacy-icon">
+                <Zap size={22} />
+              </div>
+              <h3>Intelligent Detection</h3>
+              <p>Multiple security signals combine to produce useful threat assessments.</p>
+            </PerimeterCard>
           </div>
+        </div>
+      </section>
 
-          <div className="ss-team-grid">
-            {team.map((member) => (
-              <article className="ss-team-card" key={member.number}>
-                <div className="ss-team-top">
-                  <span>{member.number}</span>
+      {/* ================= DASHBOARD PREVIEW ================= */}
+      <section className="home-section dashboard-preview" id="dashboard">
+        <div className="page-container">
+          <SectionHeading
+            eyebrow="SECURITY CENTER"
+            title={`Your Personal Threat <span class="gold-text">Intelligence Center.</span>`}
+            description="A single place to understand what you've analyzed and what requires attention."
+          />
 
-                  <div className="ss-team-avatar">
-                    <UserRound size={20} strokeWidth={1.5} />
+          <PerimeterCard className="dashboard-card">
+            <div className="dashboard-metrics">
+              <div>
+                <span>Total Analyses</span>
+                <strong>128</strong>
+                <small>Live activity</small>
+              </div>
+
+              <div>
+                <span>Threats Detected</span>
+                <strong className="danger-value">34</strong>
+                <small>26.5% of analyses</small>
+              </div>
+
+              <div>
+                <span>Average Risk</span>
+                <strong className="warning-value">62</strong>
+                <small>Moderate</small>
+              </div>
+
+              <div>
+                <span>Critical Threats</span>
+                <strong className="danger-value">08</strong>
+                <small>Requires attention</small>
+              </div>
+            </div>
+
+            <div className="dashboard-body">
+              <div className="chart-panel">
+                <div className="panel-title">
+                  <div>
+                    <span>DETECTION TRENDS</span>
+                    <strong>Recent threat activity</strong>
                   </div>
+
+                  <BarChart3 size={18} />
                 </div>
 
-                <span className="ss-team-role">{member.role}</span>
+                <div className="bar-chart">
+                  {[40, 65, 35, 80, 55, 95, 70, 82, 58].map(
+                    (height, index) => (
+                      <div
+                        key={index}
+                        className="chart-bar"
+                        style={{ height: `${height}%` }}
+                      >
+                        <span />
+                      </div>
+                    )
+                  )}
+                </div>
 
-                <h3>{member.title}</h3>
+                <div className="chart-days">
+                  <span>Mon</span>
+                  <span>Tue</span>
+                  <span>Wed</span>
+                  <span>Thu</span>
+                  <span>Fri</span>
+                  <span>Sat</span>
+                  <span>Sun</span>
+                </div>
+              </div>
 
-                <p>{member.description}</p>
+              <div className="activity-panel">
+                <div className="panel-title">
+                  <div>
+                    <span>RECENT ACTIVITY</span>
+                    <strong>Latest analyses</strong>
+                  </div>
 
-                <a
-                  href="https://github.com/"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="ss-team-link"
-                >
-                  <Github size={15} />
-                  GitHub
-                  <ArrowUpRight size={13} />
-                </a>
-              </article>
-            ))}
+                  <Link to="/history">View all</Link>
+                </div>
+
+                <div className="activity-list">
+                  {recentActivity.map((item) => (
+                    <div className="activity-row" key={item.name}>
+                      <div className="activity-name">
+                        <span
+                          className={`activity-icon ${item.type}`}
+                        >
+                          {item.type === "safe" ? (
+                            <Check size={13} />
+                          ) : (
+                            <AlertTriangle size={13} />
+                          )}
+                        </span>
+
+                        <span>{item.name}</span>
+                      </div>
+
+                      <span className={`activity-status ${item.type}`}>
+                        {item.status} · {item.score}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="dashboard-action">
+              <Link to="/dashboard" className="gold-button">
+                Open Dashboard
+                <ArrowRight size={15} />
+              </Link>
+            </div>
+          </PerimeterCard>
+        </div>
+      </section>
+
+      {/* ================= TRUST ================= */}
+      <section className="home-section capability-section">
+        <div className="page-container">
+          <SectionHeading
+            eyebrow="SCAMSHIELD CAPABILITIES"
+            title={`Built for Safer <span class="gold-text">Digital Interactions.</span>`}
+          />
+
+          <div className="capability-grid">
+            <PerimeterCard className="capability-card">
+              <strong>AI-Powered</strong>
+              <span>Threat Analysis</span>
+            </PerimeterCard>
+
+            <PerimeterCard className="capability-card">
+              <strong>3+</strong>
+              <span>Message · URL · Screenshot</span>
+            </PerimeterCard>
+
+            <PerimeterCard className="capability-card">
+              <strong>Real-Time</strong>
+              <span>Risk Detection</span>
+            </PerimeterCard>
+
+            <PerimeterCard className="capability-card">
+              <strong>0–100</strong>
+              <span>Risk Scoring</span>
+            </PerimeterCard>
           </div>
         </div>
       </section>
 
-      {/* =====================================================
-          CTA
-      ====================================================== */}
+      {/* ================= FINAL CTA ================= */}
+      <section className="final-section">
+        <div className="final-glow" />
 
-      <section className="ss-cta">
-        <div className="ss-container">
-          <div className="ss-cta-card">
-            <div className="ss-cta-grid" />
+        <div className="page-container">
+          <div className="final-card">
+            <div className="final-icon">
+              <ShieldCheck size={27} />
+            </div>
 
-            <div className="ss-cta-orb" />
+            <span className="eyebrow warm">PERIMETER WATCH · ACTIVE</span>
 
-            <div className="ss-cta-content">
-              <div className="ss-cta-label">
-                <Sparkles size={14} />
-                SCAMSHIELD AI
-              </div>
+            <h2>
+              Don&apos;t Wait Until It&apos;s{" "}
+              <span className="gold-text">Too Late.</span>
+            </h2>
 
-              <h2>
-                Don't trust the message.
-                <br />
-                <span>Analyze it.</span>
-              </h2>
+            <p>
+              Analyze suspicious digital activity and make safer decisions
+              with AI-powered threat intelligence.
+            </p>
 
-              <p>
-                Turn uncertainty into actionable security intelligence before
-                the next suspicious message becomes a costly mistake.
-              </p>
+            <div className="final-actions">
+              <Link to="/analyze" className="gold-button large-button">
+                <ScanSearch size={17} />
+                Analyze a Threat Now
+                <ArrowRight size={16} />
+              </Link>
 
-              <Link to="/signup" className="ss-primary-button">
-                Get started
+              <Link to="/signup" className="outline-button large-button">
+                Create Free Account
                 <ArrowRight size={16} />
               </Link>
             </div>
@@ -727,96 +955,66 @@ export default function Home() {
         </div>
       </section>
 
-      {/* =====================================================
-          FOOTER
-      ====================================================== */}
-
-      <footer className="ss-footer">
-        <div className="ss-container">
-          <div className="ss-footer-main">
-            <div className="ss-footer-brand">
-              <Link to="/" className="ss-brand">
-                <BrandMark />
-
-                <span className="ss-brand-name">
-                  Scam<span>Shield</span>
+      {/* ================= FOOTER ================= */}
+      <footer className="home-footer">
+        <div className="page-container">
+          <div className="footer-grid">
+            <div className="footer-brand">
+              <Link to="/" className="home-logo">
+                <span className="logo-shield">
+                  <Shield size={17} />
                 </span>
 
-                <span className="ss-brand-ai">AI</span>
+                <span>
+                  SCAMSHIELD <strong>AI</strong>
+                </span>
               </Link>
 
               <p>
-                Intelligent scam detection
-                <br />
-                & threat analysis.
+                Intelligent scam detection & threat analysis for safer digital
+                interactions.
               </p>
 
-              <div className="ss-footer-status">
-                <span />
-                Security systems operational
-              </div>
+              <span className="footer-status">
+                <i />
+                SYSTEM OPERATIONAL
+              </span>
             </div>
 
-            <div className="ss-footer-column">
-              <span className="ss-footer-heading">PRODUCT</span>
-
+            <div className="footer-column">
+              <h4>PRODUCT</h4>
+              <Link to="/analyze">Analyze</Link>
               <a href="#features">Features</a>
-              <a href="#how-it-works">How it works</a>
-              <a href="#security">Security</a>
+              <a href="#how">How It Works</a>
               <Link to="/dashboard">Dashboard</Link>
             </div>
 
-            <div className="ss-footer-column">
-              <span className="ss-footer-heading">SECURITY</span>
-
-              <a href="#security">Secure Processing</a>
+            <div className="footer-column">
+              <h4>SECURITY</h4>
               <a href="#security">AI Detection</a>
               <a href="#security">URL Intelligence</a>
               <a href="#security">Screenshot Analysis</a>
+              <a href="#security">Privacy</a>
             </div>
 
-            <div className="ss-footer-column">
-              <span className="ss-footer-heading">COMPANY</span>
-
-              <a href="#team">About</a>
-              <a href="https://github.com/" target="_blank" rel="noreferrer">
-                GitHub
-              </a>
-              <a href="#team">Team</a>
-              <a href="#security">Contact</a>
+            <div className="footer-column">
+              <h4>ACCOUNT</h4>
+              <Link to="/login">Sign In</Link>
+              <Link to="/signup">Create Account</Link>
+              <Link to="/history">History</Link>
+              <Link to="/profile">Profile</Link>
             </div>
           </div>
 
-          <div className="ss-footer-divider" />
-
-          <div className="ss-footer-bottom">
-            <div>
-              <span className="ss-footer-micro">
-                AI SECURITY INTELLIGENCE
-              </span>
-
-              <span className="ss-footer-copy">
-                © 2026 ScamShield AI
-              </span>
-
-              <span className="ss-footer-copy">
-                Built for safer digital interactions.
-              </span>
-            </div>
-
-            <a
-              href="https://github.com/Rishabh5881/ScamShield"
-              target="_blank"
-              rel="noreferrer"
-              className="ss-footer-github"
-            >
-              <Github size={15} />
-              GitHub
-              <ArrowUpRight size={13} />
-            </a>
+          <div className="footer-bottom">
+            <span>AI SECURITY INTELLIGENCE</span>
+            <span>© 2026 ScamShield AI</span>
+            <span>BUILT FOR SAFER DIGITAL INTERACTIONS</span>
           </div>
         </div>
       </footer>
-    </main>
+    </div>
   );
 }
+
+export default Home;
