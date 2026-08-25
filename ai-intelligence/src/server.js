@@ -226,8 +226,29 @@ if (
 // START SERVER
 // ==========================================
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, "0.0.0.0", () => {
   console.log(
     `ScamShield AI service running on port ${PORT}`
   );
 });
+
+// ==========================================
+// GRACEFUL SHUTDOWN
+// ==========================================
+
+const shutdown = (signal) => {
+  console.log(`Received ${signal}. Shutting down AI service...`);
+
+  server.close(() => {
+    console.log("AI service closed cleanly.");
+    process.exit(0);
+  });
+
+  setTimeout(() => {
+    console.error("Forced shutdown after timeout.");
+    process.exit(1);
+  }, 10000).unref();
+};
+
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT", () => shutdown("SIGINT"));
