@@ -7,7 +7,7 @@ import {
   Check,
   MessageSquare,
   Link2,
-  Image,
+  Image as ImageIcon,
   Brain,
   AlertTriangle,
   Lock,
@@ -18,11 +18,11 @@ import {
   TrendingUp,
   KeyRound,
   Activity,
-
   Zap,
   ChevronRight,
-
   ShieldCheck,
+  Menu,
+  X,
 } from "lucide-react";
 
 import "../styles/Home.css";
@@ -49,7 +49,7 @@ const features = [
     text: "Analyze suspicious links without visiting dangerous destinations.",
   },
   {
-    icon: Image,
+    icon: ImageIcon,
     title: "Screenshot Analysis",
     text: "Upload suspicious screenshots and identify visual scam indicators.",
   },
@@ -130,89 +130,204 @@ const recentActivity = [
   },
 ];
 
-function SectionHeading({ eyebrow, title, description, center = true }) {
+function SectionHeading({
+  eyebrow,
+  title,
+  description,
+  center = true,
+}) {
   return (
     <div className={`section-heading ${center ? "center" : ""}`}>
       {eyebrow && <span className="eyebrow warm">{eyebrow}</span>}
+
       <h2 dangerouslySetInnerHTML={{ __html: title }} />
+
       {description && <p>{description}</p>}
     </div>
   );
 }
 
 function PerimeterCard({ children, className = "" }) {
-  return <div className={`watch-card ${className}`}>{children}</div>;
+  return (
+    <div className={`watch-card ${className}`}>
+      {children}
+    </div>
+  );
 }
 
 function Home() {
   const [scrolled, setScrolled] = useState(false);
   const [activeTab, setActiveTab] = useState("message");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 20);
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 20);
+    };
 
     window.addEventListener("scroll", handleScroll);
     handleScroll();
 
-    return () => window.removeEventListener("scroll", handleScroll);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
   }, []);
 
+  useEffect(() => {
+    document.body.classList.toggle("mobile-menu-open", mobileMenuOpen);
+
+    return () => {
+      document.body.classList.remove("mobile-menu-open");
+    };
+  }, [mobileMenuOpen]);
+
+  const closeMobileMenu = () => {
+    setMobileMenuOpen(false);
+  };
+
   const scrollTo = (id) => {
-    document.getElementById(id)?.scrollIntoView({
-      behavior: "smooth",
-      block: "start",
+    closeMobileMenu();
+
+    requestAnimationFrame(() => {
+      document.getElementById(id)?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
     });
   };
 
   return (
     <div className="home-page">
-      {/* Background */}
+      {/* ================= BACKGROUND ================= */}
+
       <div className="home-grid" />
       <div className="home-noise" />
       <div className="ambient ambient-one" />
       <div className="ambient ambient-two" />
 
       {/* ================= NAVBAR ================= */}
-      <nav className={`home-navbar ${scrolled ? "scrolled" : ""}`}>
-        <Link to="/" className="home-logo">
-          <span className="logo-shield">
-            <Shield size={17} />
-          </span>
 
-          <span>
-            SCAMSHIELD <strong>AI</strong>
-          </span>
-        </Link>
+      <nav
+        className={`home-navbar ${
+          scrolled ? "scrolled" : ""
+        }`}
+      >
+        <div className="navbar-inner">
+          <Link
+            to="/"
+            className="home-logo"
+            onClick={closeMobileMenu}
+          >
+            <span className="logo-shield">
+              <Shield size={17} />
+            </span>
 
-        <div className="home-nav-links">
-          <a href="#top">Home</a>
-          <a href="#how">How It Works</a>
-          <a href="#features">Features</a>
-          <a href="#security">Security</a>
-          <a href="#dashboard">Dashboard</a>
-        </div>
-
-        <div className="home-nav-actions">
-          <Link to="/login" className="nav-signin">
-            Sign In
+            <span>
+              SCAMSHIELD <strong>AI</strong>
+            </span>
           </Link>
 
-          <Link to="/signup" className="gold-button nav-get-started">
-            Get Started
-            <ArrowRight size={15} />
-          </Link>
+          {/* Desktop navigation */}
+
+          <div className="home-nav-links">
+            <a href="#top">Home</a>
+            <a href="#how">How It Works</a>
+            <a href="#features">Features</a>
+            <a href="#security">Security</a>
+            <a href="#dashboard">Dashboard</a>
+          </div>
+
+          {/* Desktop actions */}
+
+          <div className="home-nav-actions">
+            <Link to="/login" className="nav-signin">
+              Sign In
+            </Link>
+
+            <Link
+              to="/signup"
+              className="gold-button nav-get-started"
+            >
+              Get Started
+              <ArrowRight size={15} />
+            </Link>
+          </div>
+
+          {/* Mobile menu button */}
+
+          <button
+            type="button"
+            className="mobile-nav-button"
+            onClick={() =>
+              setMobileMenuOpen((value) => !value)
+            }
+            aria-label={
+              mobileMenuOpen
+                ? "Close navigation"
+                : "Open navigation"
+            }
+            aria-expanded={mobileMenuOpen}
+          >
+            {mobileMenuOpen ? (
+              <X size={20} />
+            ) : (
+              <Menu size={20} />
+            )}
+          </button>
         </div>
 
-        <button
-          className="mobile-nav-button"
-          onClick={() => scrollTo("features")}
-          aria-label="Open navigation"
+        {/* Mobile navigation */}
+
+        <div
+          className={`mobile-nav-panel ${
+            mobileMenuOpen ? "open" : ""
+          }`}
         >
-          <Activity size={19} />
-        </button>
+          <div className="mobile-nav-links">
+            <a href="#top" onClick={closeMobileMenu}>
+              Home
+            </a>
+
+            <a href="#how" onClick={closeMobileMenu}>
+              How It Works
+            </a>
+
+            <a href="#features" onClick={closeMobileMenu}>
+              Features
+            </a>
+
+            <a href="#security" onClick={closeMobileMenu}>
+              Security
+            </a>
+
+            <a href="#dashboard" onClick={closeMobileMenu}>
+              Dashboard
+            </a>
+          </div>
+
+          <div className="mobile-nav-actions">
+            <Link
+              to="/login"
+              className="mobile-signin"
+              onClick={closeMobileMenu}
+            >
+              Sign In
+            </Link>
+
+            <Link
+              to="/signup"
+              className="gold-button mobile-get-started"
+              onClick={closeMobileMenu}
+            >
+              Get Started
+              <ArrowRight size={15} />
+            </Link>
+          </div>
+        </div>
       </nav>
 
       {/* ================= HERO ================= */}
+
       <header className="hero-section" id="top">
         <div className="page-container hero-layout">
           <div className="hero-copy">
@@ -227,19 +342,23 @@ function Home() {
             </h1>
 
             <p className="hero-description">
-              ScamShield AI analyzes suspicious messages, URLs and screenshots
-              using intelligent threat detection to help you identify digital
-              scams before it&apos;s too late.
+              ScamShield AI analyzes suspicious messages, URLs and
+              screenshots using intelligent threat detection to help
+              you identify digital scams before it&apos;s too late.
             </p>
 
             <div className="hero-actions">
-              <Link to="/analyze" className="gold-button large-button">
+              <Link
+                to="/analyze"
+                className="gold-button large-button"
+              >
                 <Shield size={17} />
                 Analyze Something Now
                 <ArrowRight size={16} />
               </Link>
 
               <button
+                type="button"
                 className="outline-button large-button"
                 onClick={() => scrollTo("how")}
               >
@@ -273,6 +392,7 @@ function Home() {
           </div>
 
           {/* HERO VISUAL */}
+
           <div className="hero-visual">
             <div className="hero-orbit orbit-one" />
             <div className="hero-orbit orbit-two" />
@@ -283,6 +403,7 @@ function Home() {
             <PerimeterCard className="threat-analysis-card">
               <div className="analysis-card-top">
                 <span>THREAT ANALYSIS</span>
+
                 <span className="analysis-live">
                   <i />
                   LIVE
@@ -302,6 +423,7 @@ function Home() {
                       r="51"
                       className="risk-track"
                     />
+
                     <circle
                       cx="60"
                       cy="60"
@@ -330,9 +452,10 @@ function Home() {
 
               <div className="fake-message">
                 <MessageSquare size={14} />
+
                 <span>
-                  &quot;Your bank account will be blocked. Verify your OTP
-                  immediately…&quot;
+                  &quot;Your bank account will be blocked. Verify
+                  your OTP immediately…&quot;
                 </span>
               </div>
 
@@ -341,12 +464,14 @@ function Home() {
                   <ShieldCheck size={13} />
                   AI confidence
                 </span>
+
                 <strong>96%</strong>
               </div>
             </PerimeterCard>
 
             <div className="floating-signal signal-clean">
               <ShieldCheck size={14} />
+
               <span>
                 <small>URL SCAN</small>
                 Clean
@@ -355,6 +480,7 @@ function Home() {
 
             <div className="floating-signal signal-danger">
               <AlertTriangle size={14} />
+
               <span>
                 <small>THREAT</small>
                 Phishing Detected
@@ -363,6 +489,7 @@ function Home() {
 
             <div className="floating-signal signal-live">
               <Activity size={14} />
+
               <span>
                 <small>ENGINE</small>
                 Monitoring…
@@ -373,20 +500,34 @@ function Home() {
       </header>
 
       {/* ================= TICKER ================= */}
+
       <div className="threat-ticker">
         <div className="ticker-track">
-          {[...tickerItems, ...tickerItems].map((item, index) => (
-            <div className="ticker-item" key={`${item[1]}-${index}`}>
-              <span className={`ticker-dot ${item[0]}`} />
-              <span>{item[1]}</span>
-              <strong>RISK {item[2]}</strong>
-            </div>
-          ))}
+          {[...tickerItems, ...tickerItems].map(
+            (item, index) => (
+              <div
+                className="ticker-item"
+                key={`${item[1]}-${index}`}
+              >
+                <span
+                  className={`ticker-dot ${item[0]}`}
+                />
+
+                <span>{item[1]}</span>
+
+                <strong>RISK {item[2]}</strong>
+              </div>
+            )
+          )}
         </div>
       </div>
 
       {/* ================= LIVE ANALYSIS ================= */}
-      <section className="home-section analysis-section" id="analyze">
+
+      <section
+        className="home-section analysis-section"
+        id="analyze"
+      >
         <div className="page-container">
           <SectionHeading
             eyebrow="LIVE DEMO"
@@ -398,7 +539,10 @@ function Home() {
             <div className="analysis-input-side">
               <div className="analysis-tabs">
                 <button
-                  className={activeTab === "message" ? "active" : ""}
+                  type="button"
+                  className={
+                    activeTab === "message" ? "active" : ""
+                  }
                   onClick={() => setActiveTab("message")}
                 >
                   <MessageSquare size={14} />
@@ -406,7 +550,10 @@ function Home() {
                 </button>
 
                 <button
-                  className={activeTab === "url" ? "active" : ""}
+                  type="button"
+                  className={
+                    activeTab === "url" ? "active" : ""
+                  }
                   onClick={() => setActiveTab("url")}
                 >
                   <Link2 size={14} />
@@ -414,10 +561,17 @@ function Home() {
                 </button>
 
                 <button
-                  className={activeTab === "screenshot" ? "active" : ""}
-                  onClick={() => setActiveTab("screenshot")}
+                  type="button"
+                  className={
+                    activeTab === "screenshot"
+                      ? "active"
+                      : ""
+                  }
+                  onClick={() =>
+                    setActiveTab("screenshot")
+                  }
                 >
-                  <Image size={14} />
+                  <ImageIcon size={14} />
                   Screenshot
                 </button>
               </div>
@@ -431,8 +585,9 @@ function Home() {
                     </div>
 
                     <div className="sample-input">
-                      Congratulations! Your bank account has been suspended.
-                      Click here immediately to verify your account details.
+                      Congratulations! Your bank account has
+                      been suspended. Click here immediately to
+                      verify your account details.
                     </div>
                   </>
                 )}
@@ -458,14 +613,23 @@ function Home() {
                     </div>
 
                     <div className="screenshot-placeholder">
-                      <Image size={28} />
-                      <strong>Suspicious screenshot</strong>
-                      <span>AI vision analysis ready</span>
+                      <ImageIcon size={28} />
+
+                      <strong>
+                        Suspicious screenshot
+                      </strong>
+
+                      <span>
+                        AI vision analysis ready
+                      </span>
                     </div>
                   </>
                 )}
 
-                <Link to="/analyze" className="gold-button analysis-button">
+                <Link
+                  to="/analyze"
+                  className="gold-button analysis-button"
+                >
                   <ScanSearch size={16} />
                   Analyze Threat
                   <ArrowRight size={15} />
@@ -476,7 +640,10 @@ function Home() {
             <div className="threat-report">
               <div className="report-heading">
                 <div>
-                  <span className="mono-label">AI THREAT REPORT</span>
+                  <span className="mono-label">
+                    AI THREAT REPORT
+                  </span>
+
                   <h3>Security assessment</h3>
                 </div>
 
@@ -494,7 +661,9 @@ function Home() {
               <div className="report-metrics">
                 <div className="report-metric">
                   <span>RISK SCORE</span>
-                  <strong className="danger-value">87 / 100</strong>
+                  <strong className="danger-value">
+                    87 / 100
+                  </strong>
                 </div>
 
                 <div className="report-metric">
@@ -504,12 +673,16 @@ function Home() {
 
                 <div className="report-metric">
                   <span>SEVERITY</span>
-                  <strong className="warning-value">HIGH</strong>
+                  <strong className="warning-value">
+                    HIGH
+                  </strong>
                 </div>
 
                 <div className="report-metric">
                   <span>CONFIDENCE</span>
-                  <strong className="success-value">96%</strong>
+                  <strong className="success-value">
+                    96%
+                  </strong>
                 </div>
               </div>
 
@@ -540,7 +713,11 @@ function Home() {
       </section>
 
       {/* ================= HOW IT WORKS ================= */}
-      <section className="home-section how-section" id="how">
+
+      <section
+        className="home-section how-section"
+        id="how"
+      >
         <div className="page-container">
           <SectionHeading
             eyebrow="THREAT WORKFLOW"
@@ -557,7 +734,10 @@ function Home() {
               </div>
 
               <h3>Submit</h3>
-              <p>Send suspicious digital content to ScamShield.</p>
+
+              <p>
+                Send suspicious digital content to ScamShield.
+              </p>
 
               <ul>
                 <li>Message</li>
@@ -574,7 +754,11 @@ function Home() {
               </div>
 
               <h3>AI Analysis</h3>
-              <p>Multiple intelligence signals are evaluated together.</p>
+
+              <p>
+                Multiple intelligence signals are evaluated
+                together.
+              </p>
 
               <ul>
                 <li>Threat patterns</li>
@@ -592,7 +776,11 @@ function Home() {
               </div>
 
               <h3>Stay Protected</h3>
-              <p>Receive a clear threat report and recommended action.</p>
+
+              <p>
+                Receive a clear threat report and recommended
+                action.
+              </p>
 
               <ul>
                 <li>Risk score</li>
@@ -607,7 +795,11 @@ function Home() {
       </section>
 
       {/* ================= FEATURES ================= */}
-      <section className="home-section features-section" id="features">
+
+      <section
+        className="home-section features-section"
+        id="features"
+      >
         <div className="page-container">
           <SectionHeading
             eyebrow="CAPABILITIES"
@@ -621,12 +813,16 @@ function Home() {
               const Icon = feature.icon;
 
               return (
-                <PerimeterCard className="feature-card" key={feature.title}>
+                <PerimeterCard
+                  className="feature-card"
+                  key={feature.title}
+                >
                   <div className="feature-icon">
                     <Icon size={20} />
                   </div>
 
                   <h3>{feature.title}</h3>
+
                   <p>{feature.text}</p>
 
                   <span className="feature-arrow">
@@ -640,6 +836,7 @@ function Home() {
       </section>
 
       {/* ================= THREATS ================= */}
+
       <section className="home-section threats-section">
         <div className="page-container">
           <SectionHeading
@@ -653,7 +850,10 @@ function Home() {
               const Icon = threat.icon;
 
               return (
-                <PerimeterCard className="threat-card" key={threat.title}>
+                <PerimeterCard
+                  className="threat-card"
+                  key={threat.title}
+                >
                   <div className="threat-top">
                     <div className="threat-icon">
                       <Icon size={21} />
@@ -663,13 +863,16 @@ function Home() {
                       {[0, 1, 2, 3].map((dot) => (
                         <i
                           key={dot}
-                          className={dot < threat.level ? "on" : ""}
+                          className={
+                            dot < threat.level ? "on" : ""
+                          }
                         />
                       ))}
                     </div>
                   </div>
 
                   <h3>{threat.title}</h3>
+
                   <p>{threat.text}</p>
                 </PerimeterCard>
               );
@@ -679,7 +882,11 @@ function Home() {
       </section>
 
       {/* ================= AI ENGINE ================= */}
-      <section className="home-section engine-section" id="security">
+
+      <section
+        className="home-section engine-section"
+        id="security"
+      >
         <div className="page-container">
           <SectionHeading
             eyebrow="INTELLIGENCE ENGINE"
@@ -694,7 +901,11 @@ function Home() {
             <div className="engine-core">
               <Brain size={28} />
               <strong>AI</strong>
-              <span>INTELLIGENCE<br />ENGINE</span>
+              <span>
+                INTELLIGENCE
+                <br />
+                ENGINE
+              </span>
             </div>
 
             <div className="engine-node node-message">
@@ -708,7 +919,7 @@ function Home() {
             </div>
 
             <div className="engine-node node-image">
-              <Image size={15} />
+              <ImageIcon size={15} />
               Screenshot Analysis
             </div>
 
@@ -731,6 +942,7 @@ function Home() {
       </section>
 
       {/* ================= PRIVACY ================= */}
+
       <section className="home-section privacy-section">
         <div className="page-container">
           <SectionHeading
@@ -744,31 +956,50 @@ function Home() {
               <div className="privacy-icon">
                 <Lock size={22} />
               </div>
+
               <h3>Secure Processing</h3>
-              <p>Sensitive information is processed through controlled security workflows.</p>
+
+              <p>
+                Sensitive information is processed through
+                controlled security workflows.
+              </p>
             </PerimeterCard>
 
             <PerimeterCard className="privacy-card">
               <div className="privacy-icon">
                 <Shield size={22} />
               </div>
+
               <h3>Privacy Focused</h3>
-              <p>Designed to minimize unnecessary exposure of user information.</p>
+
+              <p>
+                Designed to minimize unnecessary exposure of
+                user information.
+              </p>
             </PerimeterCard>
 
             <PerimeterCard className="privacy-card">
               <div className="privacy-icon">
                 <Zap size={22} />
               </div>
+
               <h3>Intelligent Detection</h3>
-              <p>Multiple security signals combine to produce useful threat assessments.</p>
+
+              <p>
+                Multiple security signals combine to produce
+                useful threat assessments.
+              </p>
             </PerimeterCard>
           </div>
         </div>
       </section>
 
-      {/* ================= DASHBOARD PREVIEW ================= */}
-      <section className="home-section dashboard-preview" id="dashboard">
+      {/* ================= DASHBOARD ================= */}
+
+      <section
+        className="home-section dashboard-preview"
+        id="dashboard"
+      >
         <div className="page-container">
           <SectionHeading
             eyebrow="SECURITY CENTER"
@@ -786,19 +1017,25 @@ function Home() {
 
               <div>
                 <span>Threats Detected</span>
-                <strong className="danger-value">34</strong>
+                <strong className="danger-value">
+                  34
+                </strong>
                 <small>26.5% of analyses</small>
               </div>
 
               <div>
                 <span>Average Risk</span>
-                <strong className="warning-value">62</strong>
+                <strong className="warning-value">
+                  62
+                </strong>
                 <small>Moderate</small>
               </div>
 
               <div>
                 <span>Critical Threats</span>
-                <strong className="danger-value">08</strong>
+                <strong className="danger-value">
+                  08
+                </strong>
                 <small>Requires attention</small>
               </div>
             </div>
@@ -808,24 +1045,26 @@ function Home() {
                 <div className="panel-title">
                   <div>
                     <span>DETECTION TRENDS</span>
-                    <strong>Recent threat activity</strong>
+                    <strong>
+                      Recent threat activity
+                    </strong>
                   </div>
 
                   <BarChart3 size={18} />
                 </div>
 
                 <div className="bar-chart">
-                  {[40, 65, 35, 80, 55, 95, 70, 82, 58].map(
-                    (height, index) => (
-                      <div
-                        key={index}
-                        className="chart-bar"
-                        style={{ height: `${height}%` }}
-                      >
-                        <span />
-                      </div>
-                    )
-                  )}
+                  {[
+                    40, 65, 35, 80, 55, 95, 70, 82, 58,
+                  ].map((height, index) => (
+                    <div
+                      key={index}
+                      className="chart-bar"
+                      style={{ height: `${height}%` }}
+                    >
+                      <span />
+                    </div>
+                  ))}
                 </div>
 
                 <div className="chart-days">
@@ -851,7 +1090,10 @@ function Home() {
 
                 <div className="activity-list">
                   {recentActivity.map((item) => (
-                    <div className="activity-row" key={item.name}>
+                    <div
+                      className="activity-row"
+                      key={item.name}
+                    >
                       <div className="activity-name">
                         <span
                           className={`activity-icon ${item.type}`}
@@ -866,7 +1108,9 @@ function Home() {
                         <span>{item.name}</span>
                       </div>
 
-                      <span className={`activity-status ${item.type}`}>
+                      <span
+                        className={`activity-status ${item.type}`}
+                      >
                         {item.status} · {item.score}
                       </span>
                     </div>
@@ -876,7 +1120,10 @@ function Home() {
             </div>
 
             <div className="dashboard-action">
-              <Link to="/dashboard" className="gold-button">
+              <Link
+                to="/dashboard"
+                className="gold-button"
+              >
                 Open Dashboard
                 <ArrowRight size={15} />
               </Link>
@@ -885,7 +1132,8 @@ function Home() {
         </div>
       </section>
 
-      {/* ================= TRUST ================= */}
+      {/* ================= CAPABILITIES ================= */}
+
       <section className="home-section capability-section">
         <div className="page-container">
           <SectionHeading
@@ -918,6 +1166,7 @@ function Home() {
       </section>
 
       {/* ================= FINAL CTA ================= */}
+
       <section className="final-section">
         <div className="final-glow" />
 
@@ -927,26 +1176,37 @@ function Home() {
               <ShieldCheck size={27} />
             </div>
 
-            <span className="eyebrow warm">PERIMETER WATCH · ACTIVE</span>
+            <span className="eyebrow warm">
+              PERIMETER WATCH · ACTIVE
+            </span>
 
             <h2>
               Don&apos;t Wait Until It&apos;s{" "}
-              <span className="gold-text">Too Late.</span>
+              <span className="gold-text">
+                Too Late.
+              </span>
             </h2>
 
             <p>
-              Analyze suspicious digital activity and make safer decisions
-              with AI-powered threat intelligence.
+              Analyze suspicious digital activity and make
+              safer decisions with AI-powered threat
+              intelligence.
             </p>
 
             <div className="final-actions">
-              <Link to="/analyze" className="gold-button large-button">
+              <Link
+                to="/analyze"
+                className="gold-button large-button"
+              >
                 <ScanSearch size={17} />
                 Analyze a Threat Now
                 <ArrowRight size={16} />
               </Link>
 
-              <Link to="/signup" className="outline-button large-button">
+              <Link
+                to="/signup"
+                className="outline-button large-button"
+              >
                 Create Free Account
                 <ArrowRight size={16} />
               </Link>
@@ -956,6 +1216,7 @@ function Home() {
       </section>
 
       {/* ================= FOOTER ================= */}
+
       <footer className="home-footer">
         <div className="page-container">
           <div className="footer-grid">
@@ -971,8 +1232,8 @@ function Home() {
               </Link>
 
               <p>
-                Intelligent scam detection & threat analysis for safer digital
-                interactions.
+                Intelligent scam detection & threat analysis
+                for safer digital interactions.
               </p>
 
               <span className="footer-status">
@@ -983,33 +1244,55 @@ function Home() {
 
             <div className="footer-column">
               <h4>PRODUCT</h4>
+
               <Link to="/analyze">Analyze</Link>
+
               <a href="#features">Features</a>
+
               <a href="#how">How It Works</a>
+
               <Link to="/dashboard">Dashboard</Link>
             </div>
 
             <div className="footer-column">
               <h4>SECURITY</h4>
+
               <a href="#security">AI Detection</a>
-              <a href="#security">URL Intelligence</a>
-              <a href="#security">Screenshot Analysis</a>
+
+              <a href="#security">
+                URL Intelligence
+              </a>
+
+              <a href="#security">
+                Screenshot Analysis
+              </a>
+
               <a href="#security">Privacy</a>
             </div>
 
             <div className="footer-column">
               <h4>ACCOUNT</h4>
+
               <Link to="/login">Sign In</Link>
-              <Link to="/signup">Create Account</Link>
+
+              <Link to="/signup">
+                Create Account
+              </Link>
+
               <Link to="/history">History</Link>
+
               <Link to="/profile">Profile</Link>
             </div>
           </div>
 
           <div className="footer-bottom">
             <span>AI SECURITY INTELLIGENCE</span>
+
             <span>© 2026 ScamShield AI</span>
-            <span>BUILT FOR SAFER DIGITAL INTERACTIONS</span>
+
+            <span>
+              BUILT FOR SAFER DIGITAL INTERACTIONS
+            </span>
           </div>
         </div>
       </footer>
