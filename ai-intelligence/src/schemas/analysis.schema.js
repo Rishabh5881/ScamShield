@@ -1,9 +1,15 @@
+
+
 import { z } from "zod";
 
 export const analysisSchema = z.object({
-  classification: z.enum(["SAFE", "SUSPICIOUS", "SCAM"]),
+  classification: z.enum([
+    "SAFE",
+    "SUSPICIOUS",
+    "SCAM",
+  ]),
 
-  confidence: z
+  confidence: z.coerce
     .number()
     .min(0)
     .max(1),
