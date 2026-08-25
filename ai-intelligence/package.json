@@ -7,7 +7,7 @@
     "dev": "node --watch src/server.js",
     "start": "node src/server.js",
     "cli": "node src/index.js",
-    "test": "node test-screenshot.js",
+    "test": "node test-ci.js",
     "test:screenshot": "node test-screenshot.js"
   },
   "dependencies": {
