@@ -73,6 +73,10 @@ jobs:
         working-directory: backend
         run: npx prisma migrate deploy
 
+      - name: Run frontend lint
+        working-directory: frontend
+        run: npm run lint
+
       - name: Run backend tests
         working-directory: backend
         run: npm test
@@ -80,6 +84,10 @@ jobs:
       - name: Run frontend tests
         working-directory: frontend
         run: npm test -- --run
+
+      - name: Run AI service tests
+        working-directory: ai-intelligence
+        run: npm test
 
       - name: Build frontend
         working-directory: frontend
