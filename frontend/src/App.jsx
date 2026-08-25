@@ -126,6 +126,11 @@ export default function App() {
           element={<Signup />}
         />
 
+        {/* PUBLIC ANALYZE */}
+        <Route
+          path="/analyze"
+          element={<Analyze />}
+        />
         {/* ANY PROTECTED/UNKNOWN URL AFTER LOGOUT */}
         <Route
           path="*"
