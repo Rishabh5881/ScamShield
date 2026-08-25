@@ -34,9 +34,10 @@ services:
     environment:
       NODE_ENV: production
       PORT: 6100
-      AI_PROVIDER: ${AI_PROVIDER}
       NARA_API_KEY: ${NARA_API_KEY}
+      NARA_BASE_URL: ${NARA_BASE_URL}
       NARA_MODEL: ${NARA_MODEL}
+      NARA_VISION_MODEL: ${NARA_VISION_MODEL}
       AI_TIMEOUT_MS: ${AI_TIMEOUT_MS}
 
     expose:

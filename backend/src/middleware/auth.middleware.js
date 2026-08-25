@@ -5,8 +5,6 @@ export async function authenticate(req, res, next) {
   try {
     const authHeader = req.headers.authorization;
 
-    console.log("AUTH HEADER DEBUG:", JSON.stringify(authHeader));
-
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return res.status(401).json({
         success: false,
@@ -15,13 +13,6 @@ export async function authenticate(req, res, next) {
     }
 
     const token = authHeader.substring(7);
-
-    console.log("TOKEN DEBUG:", {
-      length: token.length,
-      parts: token.split(".").length,
-      start: token.substring(0, 10),
-      end: token.substring(token.length - 10),
-    });
 
     const decoded = verifyToken(token);
 
@@ -58,7 +49,7 @@ export async function authenticate(req, res, next) {
 
     next();
   } catch (error) {
-    console.error("AUTH DEBUG:", error.name, error.message);
+    console.error("Authentication error:", error.name, error.message);
 
     return res.status(401).json({
       success: false,
