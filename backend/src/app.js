@@ -12,6 +12,8 @@ import { errorMiddleware } from "./middleware/error.middleware.js";
 
 const app = express();
 
+app.set('trust proxy', 1);
+
 app.use(helmet());
 
 const configuredOrigins = (
