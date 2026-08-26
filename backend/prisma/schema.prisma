@@ -22,6 +22,16 @@ model User {
   @@index([email])
 }
 
+model GuestUsage {
+  id            String   @id @default(uuid())
+  guestId       String   @unique
+  analysisCount Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([guestId])
+}
+
 model Analysis {
   id            String          @id @default(uuid())
   userId        String

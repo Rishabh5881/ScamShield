@@ -1,9 +1,13 @@
-import {
+﻿import {
   createAnalysis,
   getAnalysisHistory,
 } from "../services/analysis.service.js";
 
-const AI_SERVICE_URL = process.env.AI_SERVICE_URL || "http://localhost:6100";
+import prisma from "../config/prisma.js";
+
+const AI_SERVICE_URL =
+  process.env.AI_SERVICE_URL || "http://localhost:6100";
+
 const AI_SERVICE_TIMEOUT_MS = 15000;
 
 /**
@@ -31,7 +35,9 @@ async function analyzeMessageWithAI(originalInput) {
 
   try {
     const response = await fetch(url, {
-      signal: AbortSignal.timeout(AI_SERVICE_TIMEOUT_MS),
+      signal: AbortSignal.timeout(
+        AI_SERVICE_TIMEOUT_MS
+      ),
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -113,9 +119,6 @@ async function analyzeMessageWithAI(originalInput) {
  *
  * IMPORTANT:
  * The user supplied URL is NEVER requested.
- *
- * The only network request here is to our own
- * local AI Intelligence Service.
  */
 async function analyzeUrlWithAI(originalInput) {
   const url =
@@ -125,7 +128,9 @@ async function analyzeUrlWithAI(originalInput) {
     const response = await fetch(
       url,
       {
-        signal: AbortSignal.timeout(AI_SERVICE_TIMEOUT_MS),
+        signal: AbortSignal.timeout(
+          AI_SERVICE_TIMEOUT_MS
+        ),
         method: "POST",
         headers: {
           "Content-Type":
@@ -197,10 +202,6 @@ async function analyzeUrlWithAI(originalInput) {
 
 /**
  * Analyze a screenshot through the AI Intelligence Service.
- *
- * The original uploaded file is converted to a Blob and sent
- * as multipart/form-data using the field name expected by
- * the AI service: "image".
  */
 async function analyzeScreenshotWithAI(file) {
   if (!file?.buffer) {
@@ -236,7 +237,9 @@ async function analyzeScreenshotWithAI(file) {
     const response = await fetch(
       url,
       {
-        signal: AbortSignal.timeout(AI_SERVICE_TIMEOUT_MS),
+        signal: AbortSignal.timeout(
+          AI_SERVICE_TIMEOUT_MS
+        ),
         method: "POST",
         body: formData,
       }
@@ -313,6 +316,61 @@ async function analyzeScreenshotWithAI(file) {
 }
 
 /**
+ * Atomically consume the single guest analysis.
+ *
+ * Returns true when this request successfully
+ * consumes the guest's free analysis.
+ *
+ * Returns false when another request already
+ * consumed it.
+ */
+async function consumeGuestAnalysis(
+  guestId
+) {
+  if (!guestId) {
+    return false;
+  }
+
+  /*
+   * Ensure the guest usage record exists.
+   */
+  await prisma.guestUsage.upsert({
+    where: {
+      guestId,
+    },
+    update: {},
+    create: {
+      guestId,
+      analysisCount: 0,
+    },
+  });
+
+  /*
+   * Atomic protection:
+   *
+   * Only the request where analysisCount = 0
+   * can increment it to 1.
+   *
+   * This prevents two simultaneous requests
+   * from both receiving the free analysis.
+   */
+  const result =
+    await prisma.guestUsage.updateMany({
+      where: {
+        guestId,
+        analysisCount: 0,
+      },
+      data: {
+        analysisCount: {
+          increment: 1,
+        },
+      },
+    });
+
+  return result.count === 1;
+}
+
+/**
  * Create analysis
  */
 export async function createAnalysisController(
@@ -325,8 +383,8 @@ export async function createAnalysisController(
      * IMPORTANT:
      * Never accept an analysis result from the frontend.
      *
-     * The backend obtains the authoritative result from
-     * the AI Intelligence Service.
+     * The backend obtains the authoritative result
+     * from the AI Intelligence Service.
      */
     const {
       inputType,
@@ -387,12 +445,6 @@ export async function createAnalysisController(
      * --------------------------------------
      * SAFE STATIC URL ANALYSIS
      * --------------------------------------
-     *
-     * IMPORTANT:
-     * The supplied URL is NEVER visited.
-     *
-     * It is sent only to the local AI
-     * Intelligence Service for static analysis.
      */
     else if (
       inputType === "url"
@@ -423,19 +475,11 @@ export async function createAnalysisController(
         throw error;
       }
 
-      /*
-       * First get the raw URL intelligence result.
-       */
       const urlResult =
         await analyzeUrlWithAI(
           originalInput.trim()
         );
 
-      /*
-       * Convert URL intelligence output
-       * into the common AnalysisResult shape
-       * required by Prisma.
-       */
       const urlRiskScore =
         urlResult.overallRiskScore ?? 0;
 
@@ -561,9 +605,6 @@ export async function createAnalysisController(
      * --------------------------------------
      * VALIDATE RESULT BEFORE DATABASE
      * --------------------------------------
-     *
-     * This prevents Prisma from receiving
-     * undefined classification/riskScore/etc.
      */
     if (
       !analysisResult ||
@@ -590,8 +631,58 @@ export async function createAnalysisController(
 
     /*
      * --------------------------------------
-     * PERSIST ANALYSIS
+     * GUEST ANALYSIS
      * --------------------------------------
+     *
+     * Guest analyses are NOT saved to the
+     * authenticated user's Analysis history.
+     *
+     * The guest only gets one successful
+     * analysis.
+     */
+    if (req.isGuest) {
+      const consumed =
+        await consumeGuestAnalysis(
+          req.guestId
+        );
+
+      if (!consumed) {
+        return res.status(401).json({
+          success: false,
+          error: {
+            code:
+              "LOGIN_REQUIRED",
+            message:
+              "Your free analysis has been used. Please login or signup to continue.",
+            retryable: false,
+          },
+        });
+      }
+
+      return res.status(201).json({
+        success: true,
+        isGuest: true,
+        data: {
+          inputType,
+          originalInput:
+            inputType ===
+            "screenshot"
+              ? req.file
+                  ?.originalname ||
+                "Screenshot"
+              : originalInput.trim(),
+          result:
+            analysisResult,
+        },
+      });
+    }
+
+    /*
+     * --------------------------------------
+     * AUTHENTICATED USER
+     * --------------------------------------
+     *
+     * Existing behavior remains unchanged.
      */
     const analysis =
       await createAnalysis({
@@ -609,10 +700,17 @@ export async function createAnalysisController(
 
     return res.status(201).json({
       success: true,
+      isGuest: false,
       data: analysis,
     });
   } catch (error) {
-    console.error("Analysis error:", { code: error?.code, status: error?.status });
+    console.error(
+      "Analysis error:",
+      {
+        code: error?.code,
+        status: error?.status,
+      }
+    );
 
     /*
      * --------------------------------------
@@ -654,7 +752,8 @@ export async function createAnalysisController(
     if (
       error?.message ===
         "Invalid URL" ||
-      error?.code === "INVALID_URL"
+      error?.code ===
+        "INVALID_URL"
     ) {
       return res.status(400).json({
         success: false,
@@ -729,7 +828,7 @@ export async function createAnalysisController(
             "AI_INVALID_RESPONSE",
           message:
             "AI analysis returned an invalid response. Please try again.",
-          retryable: true,
+        retryable: true,
         },
       });
     }
@@ -759,8 +858,8 @@ export async function createAnalysisController(
 /**
  * Get authenticated user's analysis history.
  *
- * This is read-only and does not modify the
- * message / URL / screenshot analysis flow.
+ * This remains protected and does not
+ * modify the guest analysis flow.
  */
 export async function getAnalysisHistoryController(
   req,
@@ -777,7 +876,6 @@ export async function getAnalysisHistoryController(
       data: history,
     });
   } catch (error) {
-
     return res.status(500).json({
       success: false,
       message:

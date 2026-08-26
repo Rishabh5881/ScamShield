@@ -4,6 +4,10 @@ import { fileTypeFromBuffer } from "file-type";
 
 import { authenticate } from "../middleware/auth.middleware.js";
 import {
+  allowAuthenticatedOrGuest,
+} from "../middleware/guestAnalysis.middleware.js";
+
+import {
   createAnalysisController,
   getAnalysisHistoryController,
 } from "../controllers/analysis.controller.js";
@@ -106,14 +110,23 @@ async function validateScreenshotFile(req, res, next) {
   }
 }
 
+/*
+ * Analysis:
+ * - Logged-in users are allowed.
+ * - Guests get one free analysis.
+ */
 router.post(
   "/",
-  authenticate,
+  allowAuthenticatedOrGuest,
   upload.single("file"),
   validateScreenshotFile,
   createAnalysisController
 );
 
+/*
+ * History remains protected.
+ * Guests cannot access authenticated history.
+ */
 router.get(
   "/history",
   authenticate,
