@@ -1,4 +1,4 @@
-﻿import {
+import {
   createAnalysis,
   getAnalysisHistory,
 } from "../services/analysis.service.js";
@@ -73,18 +73,29 @@ async function fetchAIWithRetry(url, options, requestName = "AI") {
       try {
         payload = await response.json();
       } catch {
-        lastError = createAIServiceError(
-          `${requestName} returned invalid JSON.`,
-          502,
-          "AI_INVALID_RESPONSE"
-        );
-
-        if (attempt < AI_MAX_RETRIES) {
-          await sleep(AI_RETRY_DELAYS[attempt - 1]);
-          continue;
+        if (response.status === 429) {
+          lastError = createAIServiceError(
+            `${requestName} quota exceeded.`,
+            429,
+            "AI_QUOTA_EXCEEDED"
+          );
+        } else {
+          lastError = createAIServiceError(
+            `${requestName} returned invalid JSON.`,
+            502,
+            "AI_INVALID_RESPONSE"
+          );
         }
 
-        throw lastError;
+        if (
+          response.status === 429 ||
+          attempt >= AI_MAX_RETRIES
+        ) {
+          throw lastError;
+        }
+
+        await sleep(AI_RETRY_DELAYS[attempt - 1]);
+        continue;
       }
 
       if (response.ok) {
@@ -154,14 +165,33 @@ async function fetchAIWithRetry(url, options, requestName = "AI") {
     } catch (error) {
       clearTimeout(timeout);
 
-      if (error?.name === "AbortError") {
+      if (
+        error?.status === 429 ||
+        error?.code === "AI_QUOTA_EXCEEDED"
+      ) {
+        lastError = createAIServiceError(
+          error?.message || `${requestName} quota exceeded.`,
+          429,
+          "AI_QUOTA_EXCEEDED"
+        );
+      } else if (error?.status === 503) {
+        lastError = createAIServiceError(
+          error?.message || `${requestName} service unavailable.`,
+          503,
+          "AI_SERVICE_UNAVAILABLE"
+        );
+      } else if (error?.name === "AbortError") {
         lastError = createAIServiceError(
           `${requestName} request timed out.`,
           504,
           "AI_TIMEOUT"
         );
       } else {
-        lastError = error;
+        lastError = createAIServiceError(
+          error?.message || `${requestName} request failed.`,
+          error?.status || 503,
+          error?.code || "AI_SERVICE_UNAVAILABLE"
+        );
       }
 
       if (attempt < AI_MAX_RETRIES) {
@@ -809,5 +839,42 @@ export async function getAnalysisHistoryController(
   }
 }
 
+
+
+async function analyzeUrlWithAI(originalInput) {
+  const url = `${AI_SERVICE_URL}/analyze`;
+
+  console.log("Sending URL to AI:", {
+    url,
+    originalInput,
+  });
+
+  try {
+    return await fetchAIWithRetry(
+      url,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          message: originalInput,
+        }),
+      },
+      "AI URL"
+    );
+  } catch (error) {
+    console.error(
+      "BACKEND -> AI URL FINAL ERROR:",
+      {
+        code: error?.code,
+        status: error?.status,
+        message: error?.message,
+      }
+    );
+
+    throw error;
+  }
+}
 
 
