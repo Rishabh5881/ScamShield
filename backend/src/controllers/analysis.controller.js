@@ -1,4 +1,4 @@
-﻿import {
+import {
   createAnalysis,
   getAnalysisHistory,
 } from "../services/analysis.service.js";
@@ -8,7 +8,7 @@ import prisma from "../config/prisma.js";
 const AI_SERVICE_URL =
   process.env.AI_SERVICE_URL || "http://localhost:6100";
 
-const AI_SERVICE_TIMEOUT_MS = 15000;
+const AI_SERVICE_TIMEOUT_MS = 30000;
 
 /**
  * Create a sanitized error while preserving

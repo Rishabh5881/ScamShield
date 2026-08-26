@@ -300,6 +300,8 @@ async function generateNaraResponse({
     }, aiConfig.timeout);
 
   try {
+    const startedAt = Date.now();
+
     const response =
       await fetch(
         `${aiConfig.baseUrl}/chat/completions`,
@@ -342,6 +344,10 @@ async function generateNaraResponse({
             controller.signal,
         }
       );
+
+    console.log(
+      `NARAROUTER RESPONSE TIME: ${Date.now() - startedAt}ms`
+    );
 
     const responseText =
       await response.text();
@@ -423,7 +429,10 @@ export async function generateAIResponse({
 }) {
   let lastError = null;
 
-  console.log("NARAROUTER REQUEST:", { model: aiConfig.model, timeout: aiConfig.timeout });
+  console.log("NARAROUTER REQUEST:", {
+    model: aiConfig.model,
+    timeout: aiConfig.timeout
+  });
 
   for (
     let attempt = 1;
@@ -450,7 +459,13 @@ export async function generateAIResponse({
       lastError =
         error;
 
-      console.error(`NARAROUTER ATTEMPT ${attempt} FAILED:`, { code: error?.code, status: getStatusCode(error) });
+      console.error(
+        `NARAROUTER ATTEMPT ${attempt} FAILED:`,
+        {
+          code: error?.code,
+          status: getStatusCode(error)
+        }
+      );
 
       const status =
         getStatusCode(error);
@@ -503,12 +518,17 @@ export async function generateAIResponse({
     }
   }
 
-  console.error("NARAROUTER FINAL ERROR:", { code: lastError?.code, status: getStatusCode(lastError) });
+  console.error(
+    "NARAROUTER FINAL ERROR:",
+    {
+      code:
+        lastError?.code,
+      status:
+        getStatusCode(lastError)
+    }
+  );
 
   throw createProviderError(
     lastError
   );
 }
-
-
-
