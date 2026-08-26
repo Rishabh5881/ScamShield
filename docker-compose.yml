@@ -1,4 +1,4 @@
-services:
+﻿services:
 
   postgres:
     image: postgres:16-alpine
@@ -44,7 +44,7 @@ services:
       - "6100"
 
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:6100/health"]
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:6100/health"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -80,7 +80,7 @@ services:
         condition: service_healthy
 
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:5000/health"]
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:5000/health"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -115,3 +115,5 @@ volumes:
 networks:
   scamshield-network:
     driver: bridge
+
+

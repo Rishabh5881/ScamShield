@@ -1,4 +1,4 @@
-import {
+﻿import {
   createAnalysis,
   getAnalysisHistory,
 } from "../services/analysis.service.js";
@@ -9,6 +9,180 @@ const AI_SERVICE_URL =
   process.env.AI_SERVICE_URL || "http://localhost:6100";
 
 const AI_SERVICE_TIMEOUT_MS = 30000;
+const AI_REQUEST_TIMEOUT_MS = 45000;
+const AI_MAX_RETRIES = 3;
+const AI_RETRY_DELAYS = [1000, 2000, 4000];
+
+function isRetryableAIStatus(status) {
+  return (
+    status === 408 ||
+    status === 429 ||
+    status === 500 ||
+    status === 502 ||
+    status === 503 ||
+    status === 504
+  );
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function fetchAIWithRetry(url, options, requestName = "AI") {
+  let lastError = null;
+
+  for (let attempt = 1; attempt <= AI_MAX_RETRIES; attempt++) {
+    const startedAt = Date.now();
+    const controller = new AbortController();
+
+    const timeout = setTimeout(() => {
+      controller.abort();
+    }, AI_REQUEST_TIMEOUT_MS);
+
+    try {
+      console.log(
+        `BACKEND -> ${requestName} REQUEST START`,
+        {
+          attempt,
+          maxAttempts: AI_MAX_RETRIES,
+          url,
+        }
+      );
+
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeout);
+
+      const durationMs = Date.now() - startedAt;
+
+      console.log(
+        `BACKEND -> ${requestName} RESPONSE`,
+        {
+          attempt,
+          status: response.status,
+          ok: response.ok,
+          durationMs,
+        }
+      );
+
+      let payload = null;
+
+      try {
+        payload = await response.json();
+      } catch {
+        lastError = createAIServiceError(
+          `${requestName} returned invalid JSON.`,
+          502,
+          "AI_INVALID_RESPONSE"
+        );
+
+        if (attempt < AI_MAX_RETRIES) {
+          await sleep(AI_RETRY_DELAYS[attempt - 1]);
+          continue;
+        }
+
+        throw lastError;
+      }
+
+      if (response.ok) {
+        if (!payload?.result) {
+          lastError = createAIServiceError(
+            `${requestName} returned an empty result.`,
+            502,
+            "AI_INVALID_RESPONSE"
+          );
+
+          if (attempt < AI_MAX_RETRIES) {
+            await sleep(AI_RETRY_DELAYS[attempt - 1]);
+            continue;
+          }
+
+          throw lastError;
+        }
+
+        console.log(
+          `BACKEND -> ${requestName} SUCCESS`,
+          {
+            attempt,
+            durationMs,
+          }
+        );
+
+        return payload.result;
+      }
+
+      const status = response.status;
+
+      const code =
+        payload?.error?.code ||
+        payload?.code ||
+        "AI_SERVICE_ERROR";
+
+      const message =
+        payload?.error?.message ||
+        payload?.message ||
+        `${requestName} request failed.`;
+
+      lastError = createAIServiceError(
+        message,
+        status,
+        code
+      );
+
+      if (
+        !isRetryableAIStatus(status) ||
+        attempt >= AI_MAX_RETRIES
+      ) {
+        throw lastError;
+      }
+
+      console.warn(
+        `BACKEND -> ${requestName} RETRY`,
+        {
+          attempt,
+          nextAttempt: attempt + 1,
+          status,
+          code,
+          delayMs: AI_RETRY_DELAYS[attempt - 1],
+        }
+      );
+
+      await sleep(AI_RETRY_DELAYS[attempt - 1]);
+    } catch (error) {
+      clearTimeout(timeout);
+
+      if (error?.name === "AbortError") {
+        lastError = createAIServiceError(
+          `${requestName} request timed out.`,
+          504,
+          "AI_TIMEOUT"
+        );
+      } else {
+        lastError = error;
+      }
+
+      if (attempt < AI_MAX_RETRIES) {
+        await sleep(AI_RETRY_DELAYS[attempt - 1]);
+        continue;
+      }
+
+      break;
+    }
+  }
+
+  throw (
+    lastError ||
+    createAIServiceError(
+      "AI service is unavailable.",
+      503,
+      "AI_SERVICE_UNAVAILABLE"
+    )
+  );
+}
+
 
 /**
  * Create a sanitized error while preserving
@@ -33,176 +207,37 @@ function createAIServiceError(
 async function analyzeMessageWithAI(originalInput) {
   const url = `${AI_SERVICE_URL}/analyze`;
 
-  try {
-    const response = await fetch(url, {
-      signal: AbortSignal.timeout(
-        AI_SERVICE_TIMEOUT_MS
-      ),
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        message: originalInput,
-      }),
-    });
-
-    let payload = null;
-
-    try {
-      payload = await response.json();
-    } catch {
-      throw createAIServiceError(
-        "AI service returned an invalid response.",
-        502,
-        "AI_INVALID_RESPONSE"
-      );
-    }
-
-    if (!response.ok) {
-      const status = response.status;
-
-      const code =
-        payload?.error?.code ||
-        payload?.code ||
-        "AI_SERVICE_ERROR";
-
-      const message =
-        payload?.error?.message ||
-        payload?.message ||
-        "AI service request failed.";
-
-      throw createAIServiceError(
-        message,
-        status,
-        code
-      );
-    }
-
-    if (!payload?.result) {
-      throw createAIServiceError(
-        "AI service returned an empty analysis result.",
-        502,
-        "AI_INVALID_RESPONSE"
-      );
-    }
-
-    return payload.result;
-  } catch (error) {
-    console.error(
-      "BACKEND ? AI MESSAGE ERROR:",
-      {
-        name: error?.name,
-        code: error?.code,
-        status: error?.status,
-        message: error?.message,
-      }
-    );
-
-    if (
-      error?.status ||
-      error?.code === "AI_QUOTA_EXCEEDED"
-    ) {
-      throw error;
-    }
-
-    throw createAIServiceError(
-      "Could not connect to AI service.",
-      503,
-      "AI_SERVICE_UNAVAILABLE"
-    );
-  }
-}
-
-/**
- * Analyze a URL through the SAFE STATIC URL pipeline.
- *
- * IMPORTANT:
- * The user supplied URL is NEVER requested.
- */
-async function analyzeUrlWithAI(originalInput) {
-  const url =
-    `${AI_SERVICE_URL}/analyze-url`;
+  console.log("Sending message to AI:", {
+    url,
+  });
 
   try {
-    const response = await fetch(
+    return await fetchAIWithRetry(
       url,
       {
-        signal: AbortSignal.timeout(
-          AI_SERVICE_TIMEOUT_MS
-        ),
         method: "POST",
         headers: {
-          "Content-Type":
-            "application/json",
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          url: originalInput,
+          message: originalInput,
         }),
-      }
+      },
+      "AI MESSAGE"
     );
-
-    let payload = null;
-
-    try {
-      payload =
-        await response.json();
-    } catch {
-      throw createAIServiceError(
-        "AI URL service returned an invalid response.",
-        502,
-        "AI_INVALID_RESPONSE"
-      );
-    }
-
-    if (!response.ok) {
-      throw createAIServiceError(
-        payload?.error?.message ||
-          "AI URL analysis failed.",
-        response.status,
-        payload?.error?.code ||
-          "AI_SERVICE_ERROR"
-      );
-    }
-
-    if (!payload?.result) {
-      throw createAIServiceError(
-        "AI URL service returned an empty result.",
-        502,
-        "AI_INVALID_RESPONSE"
-      );
-    }
-
-    return payload.result;
   } catch (error) {
     console.error(
-      "BACKEND ? AI URL STATIC ANALYSIS ERROR:",
+      "BACKEND -> AI MESSAGE FINAL ERROR:",
       {
-        name: error?.name,
         code: error?.code,
         status: error?.status,
         message: error?.message,
       }
     );
 
-    if (
-      error?.status ||
-      error?.code
-    ) {
-      throw error;
-    }
-
-    throw createAIServiceError(
-      "Could not connect to AI URL service.",
-      503,
-      "AI_SERVICE_UNAVAILABLE"
-    );
+    throw error;
   }
 }
-
-/**
- * Analyze a screenshot through the AI Intelligence Service.
- */
 async function analyzeScreenshotWithAI(file) {
   if (!file?.buffer) {
     throw createAIServiceError(
@@ -212,8 +247,17 @@ async function analyzeScreenshotWithAI(file) {
     );
   }
 
-  const url =
-    `${AI_SERVICE_URL}/analyze-screenshot`;
+  const url = `${AI_SERVICE_URL}/analyze-screenshot`;
+
+  console.log(
+    "Sending screenshot to AI:",
+    {
+      url,
+      fileName: file.originalname,
+      mimeType: file.mimetype,
+      size: file.size,
+    }
+  );
 
   try {
     const formData = new FormData();
@@ -230,149 +274,30 @@ async function analyzeScreenshotWithAI(file) {
     formData.append(
       "image",
       blob,
-      file.originalname ||
-        "screenshot.png"
+      file.originalname || "screenshot.png"
     );
 
-    const response = await fetch(
+    return await fetchAIWithRetry(
       url,
       {
-        signal: AbortSignal.timeout(
-          AI_SERVICE_TIMEOUT_MS
-        ),
         method: "POST",
         body: formData,
-      }
+      },
+      "AI SCREENSHOT"
     );
-
-    let payload = null;
-
-    try {
-      payload =
-        await response.json();
-    } catch {
-      throw createAIServiceError(
-        "AI screenshot service returned an invalid response.",
-        502,
-        "AI_INVALID_RESPONSE"
-      );
-    }
-
-    if (!response.ok) {
-      const status =
-        response.status;
-
-      const code =
-        payload?.error?.code ||
-        payload?.code ||
-        "AI_SERVICE_ERROR";
-
-      const message =
-        payload?.error?.message ||
-        payload?.message ||
-        "AI screenshot service request failed.";
-
-      throw createAIServiceError(
-        message,
-        status,
-        code
-      );
-    }
-
-    if (!payload?.result) {
-      throw createAIServiceError(
-        "AI screenshot service returned an empty analysis result.",
-        502,
-        "AI_INVALID_RESPONSE"
-      );
-    }
-
-    return payload.result;
   } catch (error) {
     console.error(
-      "BACKEND ? AI SCREENSHOT ERROR:",
+      "BACKEND -> AI SCREENSHOT FINAL ERROR:",
       {
-        name: error?.name,
         code: error?.code,
         status: error?.status,
         message: error?.message,
       }
     );
 
-    if (
-      error?.status ||
-      error?.code ===
-        "AI_QUOTA_EXCEEDED"
-    ) {
-      throw error;
-    }
-
-    throw createAIServiceError(
-      "Could not connect to AI screenshot service.",
-      503,
-      "AI_SERVICE_UNAVAILABLE"
-    );
+    throw error;
   }
 }
-
-/**
- * Atomically consume the single guest analysis.
- *
- * Returns true when this request successfully
- * consumes the guest's free analysis.
- *
- * Returns false when another request already
- * consumed it.
- */
-async function consumeGuestAnalysis(
-  guestId
-) {
-  if (!guestId) {
-    return false;
-  }
-
-  /*
-   * Ensure the guest usage record exists.
-   */
-  await prisma.guestUsage.upsert({
-    where: {
-      guestId,
-    },
-    update: {},
-    create: {
-      guestId,
-      analysisCount: 0,
-    },
-  });
-
-  /*
-   * Atomic protection:
-   *
-   * Only the request where analysisCount = 0
-   * can increment it to 1.
-   *
-   * This prevents two simultaneous requests
-   * from both receiving the free analysis.
-   */
-  const result =
-    await prisma.guestUsage.updateMany({
-      where: {
-        guestId,
-        analysisCount: 0,
-      },
-      data: {
-        analysisCount: {
-          increment: 1,
-        },
-      },
-    });
-
-  return result.count === 1;
-}
-
-/**
- * Create analysis
- */
 export async function createAnalysisController(
   req,
   res,
@@ -883,3 +808,6 @@ export async function getAnalysisHistoryController(
     });
   }
 }
+
+
+
