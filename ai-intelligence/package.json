@@ -11,7 +11,6 @@
     "test:screenshot": "node test-screenshot.js"
   },
   "dependencies": {
-    "@google/genai": "^2.17.1",
     "dotenv": "^16.4.7",
     "express": "^5.2.1",
     "multer": "^2.2.0",

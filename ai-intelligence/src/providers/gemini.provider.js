@@ -428,12 +428,6 @@ export async function generateAIResponse({
   userPrompt,
 }) {
   let lastError = null;
-
-  console.log("NARAROUTER REQUEST:", {
-    model: aiConfig.model,
-    timeout: aiConfig.timeout
-  });
-
   for (
     let attempt = 1;
     attempt <= MAX_RETRIES;
