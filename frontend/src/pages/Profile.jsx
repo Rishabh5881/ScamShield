@@ -28,7 +28,7 @@ export default function Profile() {
 
   const changeSetting = (key, value) => {
     updateSetting(key, value);
-    setSaveMessage(`${value ? "Enabled" : "Disabled"} — saved automatically.`);
+    setSaveMessage(`${value ? "Enabled" : "Disabled"} â€” saved automatically.`);
   };
 
   const restoreDefaults = () => {
@@ -48,7 +48,7 @@ export default function Profile() {
 
       <section className="profile-card">
         <div className="avatar large">{initial}</div>
-        <div><h2>{name}</h2><p>Security Analyst · ScamShield AI</p></div>
+        <div><h2>{name}</h2><p>Security Analyst Â· ScamShield AI</p></div>
         <span className={`profile-status ${settings.threatMonitoring ? "" : "paused"}`}><ShieldCheck size={13} /> {settings.threatMonitoring ? "Protection active" : "Protection paused"}</span>
       </section>
 

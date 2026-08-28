@@ -36,8 +36,9 @@ export default function HistoryDetails() {
     return (
       <main className="page-content">
         <section className="panel">
-          <div className="empty-table">
-            <strong>Loading analysis details...</strong>
+          <div className="dashboard-state loading">
+            <strong>Loading analysis details</strong>
+            <span>Retrieving the security assessment and evidence.</span>
           </div>
         </section>
       </main>
@@ -48,8 +49,9 @@ export default function HistoryDetails() {
     return (
       <main className="page-content">
         <section className="panel">
-          <div className="empty-table">
-            <strong>{error || "Analysis not found."}</strong>
+          <div className="dashboard-state error" role="alert">
+            <strong>{error ? "Analysis unavailable" : "Analysis not found"}</strong>
+            <span>{error || "This security assessment could not be found or may no longer be available."}</span>
             <Link to="/history">Back to history</Link>
           </div>
         </section>
@@ -91,17 +93,17 @@ export default function HistoryDetails() {
 
           <div>
             <span>Classification</span>
-            <strong>{result.classification || "—"}</strong>
+            <strong>{result.classification || "â€”"}</strong>
           </div>
 
           <div>
             <span>Scam type</span>
-            <strong>{result.scamType || "—"}</strong>
+            <strong>{result.scamType || "â€”"}</strong>
           </div>
 
           <div>
             <span>Severity</span>
-            <strong>{result.severity || "—"}</strong>
+            <strong>{result.severity || "â€”"}</strong>
           </div>
 
           <div>
@@ -109,18 +111,18 @@ export default function HistoryDetails() {
             <strong>
               {analysis.createdAt
                 ? new Date(analysis.createdAt).toLocaleString()
-                : "—"}
+                : "â€”"}
             </strong>
           </div>
 
           <div>
             <span>Input</span>
-            <strong>{analysis.originalInput || "—"}</strong>
+            <strong>{analysis.originalInput || "â€”"}</strong>
           </div>
 
           <div>
             <span>Explanation</span>
-            <strong>{result.explanation || "—"}</strong>
+            <strong>{result.explanation || "â€”"}</strong>
           </div>
         </div>
 

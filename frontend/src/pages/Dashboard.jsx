@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   ArrowRight,
@@ -154,15 +154,13 @@ export default function Dashboard() {
       </div>
 
       {error && (
-        <div className="error-box" role="status">
-          {error}
-        </div>
+        <div className="dashboard-state error" role="alert"><strong>Dashboard unavailable</strong><span>{error}</span></div>
       )}
 
       <section className="security-hero">
         <div className="hero-copy">
           <span className="eyebrow warm">
-            Perimeter watch · live
+            Perimeter watch Â· live
           </span>
 
           <h2>
@@ -193,7 +191,7 @@ export default function Dashboard() {
           <div className="signal-panel-head">
             <div>
               <strong>Live readout</strong>
-              <span>ScamShield · incoming</span>
+              <span>ScamShield Â· incoming</span>
             </div>
 
             <span className="signal-live">Scanning</span>
@@ -207,7 +205,7 @@ export default function Dashboard() {
 
           <div className="signal-readout">
             <strong>
-              {loading ? "—" : summary.highRisk ?? 0}
+              {loading ? "â€”" : summary.highRisk ?? 0}
               <small> high risk</small>
             </strong>
 
@@ -217,7 +215,7 @@ export default function Dashboard() {
           </div>
 
           <p className="signal-meta">
-            <b>Backend analytics</b> · real database activity
+            <b>Backend analytics</b> Â· real database activity
           </p>
         </div>
       </section>
@@ -252,9 +250,7 @@ export default function Dashboard() {
           </div>
 
           {loading ? (
-            <div className="empty-table">
-              Loading recent analyses...
-            </div>
+            <div className="dashboard-state loading"><strong>Loading recent analyses</strong><span>Fetching your latest security activity.</span></div>
           ) : (
             <RecentAnalyses
               items={recentAnalyses}
@@ -306,9 +302,7 @@ export default function Dashboard() {
     </div>
 
     {loading ? (
-      <div className="empty-table">
-        Loading threat categories...
-      </div>
+      <div className="dashboard-state loading"><strong>Loading threat categories</strong><span>Preparing your threat distribution.</span></div>
     ) : (
       <CategoryChart
         categories={categories}
@@ -328,9 +322,7 @@ export default function Dashboard() {
     </div>
 
     {loading ? (
-      <div className="empty-table">
-        Loading risk distribution...
-      </div>
+      <div className="dashboard-state loading"><strong>Loading risk distribution</strong><span>Calculating your current security exposure.</span></div>
     ) : (
       <RiskDistribution
         distribution={
@@ -352,9 +344,7 @@ export default function Dashboard() {
     </div>
 
     {loading ? (
-      <div className="empty-table">
-        Loading detection trends...
-      </div>
+      <div className="dashboard-state loading"><strong>Loading detection trends</strong><span>Building your recent detection activity.</span></div>
     ) : (
       <DetectionTrends
         trends={
@@ -429,6 +419,4 @@ export default function Dashboard() {
     </main>
   );
 }
-
-
 

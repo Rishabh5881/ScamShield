@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import {
   Search,
   SlidersHorizontal,
@@ -22,7 +22,7 @@ function mapRow(item) {
     score: result?.riskScore ?? 0,
     date: item?.createdAt
       ? new Date(item.createdAt).toLocaleDateString()
-      : "—",
+      : "â€”",
     inputType: item?.inputType || "analysis",
   };
 }
@@ -181,8 +181,9 @@ export default function History() {
         </div>
 
         {error && (
-          <div className="error-box" role="alert">
-            {error}
+          <div className="dashboard-state error" role="alert">
+            <strong>History unavailable</strong>
+            <span>{error}</span>
           </div>
         )}
 

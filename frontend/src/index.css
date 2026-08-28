@@ -2368,3 +2368,178 @@ select {
     scroll-behavior: auto !important;
   }
 }
+/* =========================================================
+   MODULE 24 — DASHBOARD STATE POLISH
+   Production loading / empty / error states
+   ========================================================= */
+
+.dashboard-state {
+  min-height: 150px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 8px;
+  padding: 28px 20px;
+  text-align: center;
+  border: 1px dashed var(--line-strong);
+  border-radius: 10px;
+  background: rgba(243,241,234,.012);
+}
+
+.dashboard-state strong {
+  color: var(--text-dim);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.dashboard-state span {
+  max-width: 360px;
+  color: var(--faint);
+  font-size: 11px;
+  line-height: 1.65;
+}
+
+.dashboard-state.loading {
+  border-style: solid;
+}
+
+.dashboard-state.loading::before {
+  content: "";
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--line-strong);
+  border-top-color: var(--brass-soft);
+  border-radius: 50%;
+  animation: dashboard-spin .8s linear infinite;
+}
+
+.dashboard-state.error {
+  border-color: rgba(226,99,95,.22);
+  background: rgba(226,99,95,.035);
+}
+
+.dashboard-state.error strong {
+  color: #f0aeab;
+}
+
+.dashboard-state.empty strong {
+  color: var(--text-dim);
+}
+
+@keyframes dashboard-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-state.loading::before {
+    animation: none;
+  }
+}
+.empty-table{
+  position:relative;
+  min-height:180px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
+  gap:10px;
+  padding:40px 20px;
+  color:var(--muted);
+  text-align:center;
+  font-size:13px;
+  background:
+    linear-gradient(
+      110deg,
+      transparent 20%,
+      rgba(243,241,234,.035) 45%,
+      transparent 70%
+    );
+  background-size:220% 100%;
+  animation:loading-shimmer 2.2s ease-in-out infinite;
+  border-radius:10px;
+}
+
+.empty-table::before{
+  content:"";
+  width:28px;
+  height:28px;
+  border:2px solid var(--line-strong);
+  border-top-color:var(--brass-soft);
+  border-right-color:var(--teal-soft);
+  border-radius:50%;
+  animation:loading-spin 900ms linear infinite;
+}
+
+.empty-table::after{
+  content:"";
+  position:absolute;
+  left:15%;
+  right:15%;
+  bottom:18px;
+  height:1px;
+  background:linear-gradient(
+    90deg,
+    transparent,
+    rgba(205,162,76,.22),
+    rgba(79,166,156,.18),
+    transparent
+  );
+}
+
+@keyframes loading-spin{
+  to{
+    transform:rotate(360deg);
+  }
+}
+
+@keyframes loading-shimmer{
+  0%{
+    background-position:120% 0;
+  }
+  100%{
+    background-position:-20% 0;
+  }
+}
+
+@media(prefers-reduced-motion:reduce){
+  .empty-table,
+  .empty-table::before{
+    animation:none;
+  }
+}
+
+/* ---------- security trust messaging ---------- */
+.security-trust{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-top:12px;
+  padding:10px 12px;
+  color:var(--muted);
+  background:rgba(79,166,156,.035);
+  border:1px solid rgba(79,166,156,.14);
+  border-radius:8px;
+  font-size:11px;
+  line-height:1.55;
+}
+
+.security-trust svg{
+  flex:0 0 auto;
+  width:15px;
+  height:15px;
+  color:var(--teal-soft);
+}
+
+.security-trust strong{
+  color:var(--text-dim);
+  font-weight:700;
+}
+
+@media(max-width:760px){
+  .security-trust{
+    align-items:flex-start;
+  }
+}

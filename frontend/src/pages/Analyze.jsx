@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+﻿import { useRef, useState } from "react";
 import {
   Link2,
   MessageSquare,
@@ -421,7 +421,7 @@ export default function Analyze() {
 
                     <span>
                       {formatBytes(file.size)}
-                      {" · "}
+                      {" Â· "}
                       click to replace
                     </span>
 
@@ -505,7 +505,9 @@ export default function Analyze() {
               </div>
             )}
 
-            <button
+            <div className="security-trust" role="note"><ShieldAlert size={15} /><span><strong>Privacy-first analysis.</strong>{" "}Your input is checked for threat indicators and presented as an explainable security assessment.</span></div>
+
+<button
               className="primary-btn analyze-btn"
               disabled={status === "loading"}
               type="submit"
@@ -649,7 +651,7 @@ export default function Analyze() {
                   result.classification ||
                   "Security signal"}
 
-                {" · "}
+                {" Â· "}
 
                 {Math.round(
                   (Number(
@@ -696,7 +698,7 @@ export default function Analyze() {
                       <span
                         key={`${flag}-${index}`}
                       >
-                        • {flag}
+                        â€¢ {flag}
                       </span>
                     )
                   )
@@ -724,7 +726,7 @@ export default function Analyze() {
                       <span
                         key={`${action}-${index}`}
                       >
-                        ✓ {action}
+                        âœ“ {action}
                       </span>
                     )
                   )
@@ -755,7 +757,7 @@ export default function Analyze() {
                         <span
                           key={`${pattern}-${index}`}
                         >
-                          • {pattern}
+                          â€¢ {pattern}
                         </span>
                       )
                     )}
@@ -781,7 +783,7 @@ export default function Analyze() {
                 </button>
 
                 <p className="ai-disclaimer">
-                  AI-assisted assessment — not an absolute guarantee.
+                  AI-assisted assessment â€” not an absolute guarantee.
                 </p>
               </div>
             </div>
