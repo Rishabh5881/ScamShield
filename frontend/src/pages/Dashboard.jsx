@@ -326,7 +326,7 @@ export default function Dashboard() {
     ) : (
       <RiskDistribution
         distribution={
-          analytics?.severityDistribution || []
+          analytics?.riskDistribution || []
         }
       />
     )}
