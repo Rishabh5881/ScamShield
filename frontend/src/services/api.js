@@ -5,7 +5,7 @@ const api = axios.create({
     import.meta.env.VITE_API_URL ||
     "/api",
 
-  timeout: 30000,
+  timeout: 60000,
 
   headers: {
     "Content-Type": "application/json",
@@ -353,7 +353,7 @@ export async function analyzeMessage(
           "/analysis",
           formData,
           {
-            timeout: 30000,
+            timeout: 60000,
 
             // IMPORTANT:
             // Do not force application/json
