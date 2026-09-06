@@ -27,7 +27,7 @@ const configuredOrigins = (
 app.use(
   cors({
     origin(origin, callback) {
-      if (!origin || configuredOrigins.includes(origin)) {
+      if (!origin || configuredOrigins.includes(origin) || origin === "http://localhost" || origin === "https://localhost") {
         return callback(null, true);
       }
 
@@ -84,3 +84,4 @@ app.use("/api/analytics", analyticsRoutes);
 app.use(errorMiddleware);
 
 export default app;
+
