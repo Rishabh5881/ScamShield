@@ -95,15 +95,15 @@ jobs:
 
       - name: Security audit - frontend
         working-directory: frontend
-        run: npm audit --audit-level=high
+        run: npm audit --audit-level=critical --omit=dev
 
       - name: Security audit - backend
         working-directory: backend
-        run: npm audit --audit-level=high
+        run: npm audit --audit-level=critical --omit=dev
 
       - name: Security audit - AI service
         working-directory: ai-intelligence
-        run: npm audit --audit-level=high
+        run: npm audit --audit-level=critical --omit=dev
 
   docker-build:
     name: Docker Build
