@@ -178,8 +178,7 @@ function createProviderError(error) {
     providerError.status =
       429;
 
-    providerError.retryable =
-      true;
+    providerError.retryable = false;
 
     return providerError;
   }
@@ -205,8 +204,7 @@ function createProviderError(error) {
     providerError.status =
       503;
 
-    providerError.retryable =
-      true;
+    providerError.retryable = false;
 
     return providerError;
   }
@@ -230,8 +228,7 @@ function createProviderError(error) {
     providerError.status =
       504;
 
-    providerError.retryable =
-      true;
+    providerError.retryable = false;
 
     return providerError;
   }
@@ -255,8 +252,7 @@ function createProviderError(error) {
     providerError.status =
       502;
 
-    providerError.retryable =
-      true;
+    providerError.retryable = false;
 
     return providerError;
   }
@@ -526,3 +522,5 @@ export async function generateAIResponse({
     lastError
   );
 }
+
+
