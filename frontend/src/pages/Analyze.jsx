@@ -421,7 +421,7 @@ export default function Analyze() {
 
                     <span>
                       {formatBytes(file.size)}
-                      {" Â· "}
+                      {" - "}
                       click to replace
                     </span>
 
@@ -651,7 +651,7 @@ export default function Analyze() {
                   result.classification ||
                   "Security signal"}
 
-                {" Â· "}
+                {" - "}
 
                 {Math.round(
                   (Number(
@@ -698,7 +698,7 @@ export default function Analyze() {
                       <span
                         key={`${flag}-${index}`}
                       >
-                        â€¢ {flag}
+                        - {flag}
                       </span>
                     )
                   )
@@ -726,7 +726,7 @@ export default function Analyze() {
                       <span
                         key={`${action}-${index}`}
                       >
-                        âœ“ {action}
+                        + {action}
                       </span>
                     )
                   )
@@ -757,7 +757,7 @@ export default function Analyze() {
                         <span
                           key={`${pattern}-${index}`}
                         >
-                          â€¢ {pattern}
+                          - {pattern}
                         </span>
                       )
                     )}
@@ -783,7 +783,7 @@ export default function Analyze() {
                 </button>
 
                 <p className="ai-disclaimer">
-                  AI-assisted assessment â€” not an absolute guarantee.
+                  AI-assisted assessment - not an absolute guarantee.
                 </p>
               </div>
             </div>
@@ -793,3 +793,6 @@ export default function Analyze() {
     </main>
   );
 }
+
+
+
