@@ -67,7 +67,7 @@ export async function analyzeMessage(text) {
   let parsedResponse;
 
   try {
-    parsedResponse = JSON.parse(rawResponse);
+    parsedResponse = JSON.parse(rawResponse.trim());
   } catch (error) {
     console.error("AI JSON PARSE ERROR");
 
@@ -241,5 +241,4 @@ export async function analyzeMessage(text) {
       validatedRiskDecision,
   };
 }
-
 
