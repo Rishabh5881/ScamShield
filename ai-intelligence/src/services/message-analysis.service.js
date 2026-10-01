@@ -1,3 +1,4 @@
+
 import {
   messageSystemPrompt,
   buildMessageUserPrompt,
@@ -67,9 +68,19 @@ export async function analyzeMessage(text) {
   let parsedResponse;
 
   try {
-    parsedResponse = JSON.parse(rawResponse.trim());
+    const cleanedResponse = rawResponse
+      .trim()
+      .replace(/^```json\s*/i, "")
+      .replace(/^```\s*/i, "")
+      .replace(/\s*```$/i, "")
+      .trim();
+
+    parsedResponse = JSON.parse(cleanedResponse);
   } catch (error) {
-    console.error("AI JSON PARSE ERROR");
+    console.error(
+      "AI JSON PARSE ERROR:",
+      error?.message
+    );
 
     throw new Error("AI returned invalid JSON");
   }
@@ -119,7 +130,9 @@ export async function analyzeMessage(text) {
     );
 
   if (!hybridValidation.success) {
-    console.error("HYBRID RISK VALIDATION ERROR");
+    console.error(
+      "HYBRID RISK VALIDATION ERROR"
+    );
 
     throw new Error(
       "Hybrid risk validation failed"
@@ -179,7 +192,9 @@ export async function analyzeMessage(text) {
     );
 
   if (!riskDecisionValidation.success) {
-    console.error("RISK DECISION VALIDATION ERROR");
+    console.error(
+      "RISK DECISION VALIDATION ERROR"
+    );
 
     throw new Error(
       "Risk decision validation failed"
