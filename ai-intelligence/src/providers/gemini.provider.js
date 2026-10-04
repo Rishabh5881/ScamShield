@@ -63,7 +63,6 @@ function isRetryableError(error) {
     getStatusCode(error);
 
   return (
-    status === 429 ||
     status === 500 ||
     status === 502 ||
     status === 503 ||
@@ -169,11 +168,11 @@ function createProviderError(error) {
   if (status === 429) {
     providerError =
       new Error(
-        "AI provider rate limit reached. Please try again later."
+        "AI provider quota or rate limit has been exceeded. Please try again later."
       );
 
     providerError.code =
-      "AI_RATE_LIMITED";
+      "AI_QUOTA_EXCEEDED";
 
     providerError.status =
       429;
