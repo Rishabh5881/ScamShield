@@ -38,23 +38,27 @@ export async function signup({ name, email, password }) {
 }
 
 export async function login({ email, password }) {
+  const dbStart = Date.now();
   const user = await prisma.user.findUnique({
     where: {
       email,
     },
   });
 
+  console.log(`[LOGIN] DB lookup: ${Date.now() - dbStart}ms`);
   if (!user) {
     const error = new Error("Invalid email or password");
     error.statusCode = 401;
     throw error;
   }
 
+  const bcryptStart = Date.now();
   const passwordValid = await comparePassword(
     password,
     user.passwordHash
   );
 
+  console.log(`[LOGIN] Password compare: ${Date.now() - bcryptStart}ms`);
   if (!passwordValid) {
     const error = new Error("Invalid email or password");
     error.statusCode = 401;

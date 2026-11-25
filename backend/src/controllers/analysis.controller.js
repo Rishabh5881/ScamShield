@@ -16,8 +16,7 @@ const AI_RETRY_DELAYS = [1000, 2000, 4000];
 function isRetryableAIStatus(status) {
   return (
     status === 408 ||
-    status === 429 ||
-    status === 500 ||
+        status === 500 ||
     status === 502 ||
     status === 503 ||
     status === 504
@@ -88,8 +87,7 @@ async function fetchAIWithRetry(url, options, requestName = "AI") {
         }
 
         if (
-          response.status === 429 ||
-          attempt >= AI_MAX_RETRIES
+          response.status === 429 || attempt >= AI_MAX_RETRIES
         ) {
           throw lastError;
         }
@@ -166,8 +164,7 @@ async function fetchAIWithRetry(url, options, requestName = "AI") {
       clearTimeout(timeout);
 
       if (
-        error?.status === 429 ||
-        error?.code === "AI_QUOTA_EXCEEDED"
+        error?.status === 429 || error?.code === "AI_QUOTA_EXCEEDED"
       ) {
         lastError = createAIServiceError(
           error?.message || `${requestName} quota exceeded.`,
@@ -194,7 +191,7 @@ async function fetchAIWithRetry(url, options, requestName = "AI") {
         );
       }
 
-      if (attempt < AI_MAX_RETRIES) {
+      if (attempt < AI_MAX_RETRIES && isRetryableAIStatus(lastError?.status)) {
         await sleep(AI_RETRY_DELAYS[attempt - 1]);
         continue;
       }
@@ -728,8 +725,7 @@ export async function createAnalysisController(
      * --------------------------------------
      */
     if (
-      error?.status === 429 ||
-      error?.code ===
+      error?.status === 429 || error?.code ===
         "AI_QUOTA_EXCEEDED"
     ) {
       return res.status(429).json({
